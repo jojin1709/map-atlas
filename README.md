@@ -21,7 +21,7 @@ No Leaflet. No Mapbox. No Google Maps. Just TypeScript, React, and pure engineer
 ## Install
 
 ```bash
-npm install map-atlas
+npm i map-atlas
 # or
 yarn add map-atlas
 # or
@@ -51,7 +51,7 @@ npm install react react-dom
 </script>
 ```
 
-> **Note:** The ESM bundle imports `react/jsx-runtime`. For vanilla JS CDN use, you can load the CJS bundle via a bundler, or use the ESM build with an import map. For production apps, `npm install map-atlas` is recommended.
+> **Note:** The ESM bundle imports `react/jsx-runtime`. For vanilla JS CDN use, you can load the CJS bundle via a bundler, or use the ESM build with an import map. For production apps, `npm i map-atlas` is recommended.
 
 ---
 
