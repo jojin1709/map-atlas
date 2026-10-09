@@ -22,8 +22,9 @@ export const CONFIG: MapConfig = {
     },
     dark: {
       label: 'Dark',
-      tiles: ['https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'],
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com">CARTO</a>',
+      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      cssFilter: 'invert(88%) hue-rotate(180deg) brightness(0.92) contrast(1.08) saturate(0.4)',
     },
     topo: {
       label: 'Topo',

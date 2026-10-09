@@ -9,6 +9,9 @@
 import { project, unproject } from './projection'
 import type { LatLng } from '../types'
 import { TileLayer } from './tiles'
+import { HeatmapOverlay } from './heatmap'
+import type { HeatPoint, HeatmapOptions } from './heatmap'
+import '../engine.css'
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
 const MIN_ZOOM = 1
@@ -21,6 +24,7 @@ export interface MapEngineOptions {
   maxZoom?: number
   tileUrls?: string[]
   attribution?: string
+  cssFilter?: string
   keyboard?: boolean
   inertia?: boolean
   scaleBar?: boolean
@@ -228,7 +232,7 @@ export class MapEngine {
       this.scaleBarEl.innerHTML = '<span class="me-scalebar-line"></span><span class="me-scalebar-text"></span>'
     }
 
-    if (opts.tileUrls?.length) this.setTiles(opts.tileUrls, opts.attribution)
+    if (opts.tileUrls?.length) this.setTiles(opts.tileUrls, opts.attribution, opts.cssFilter)
     if (opts.keyboard !== false) this._bindKeyboard()
     this._bindInput()
 
@@ -258,10 +262,12 @@ export class MapEngine {
 
   /* ---- tiles ---- */
 
-  setTiles(templates: string[] | string, attribution?: string): void {
+  setTiles(templates: string[] | string, attribution?: string, cssFilter?: string): void {
     const arr = typeof templates === 'string' ? [templates] : templates
     if (this.tileLayer) this.tileLayer.destroy()
     if (this.tileLayer2) { this.tileLayer2.destroy(); this.tileLayer2 = null }
+
+    this.tileLayerEl.style.filter = cssFilter || ''
 
     this.tileLayer = new TileLayer(this.tileLayerEl, this.attrEl, {
       template: arr[0] || '',
@@ -303,6 +309,38 @@ export class MapEngine {
   setClusterMarkers(points: (LatLng & MarkerStyle & { id: number })[]): void {
     this.markersForCluster = points
     this._draw()
+  }
+
+  /* ---- heatmap ---- */
+
+  private heatmap: HeatmapOverlay | null = null
+
+  showHeatmap(points: HeatPoint[], opts?: HeatmapOptions): void {
+    if (!this.heatmap) {
+      this.heatmap = new HeatmapOverlay(this.container, opts)
+    }
+    this.heatmap.setPoints(points)
+    this._drawHeatmap()
+  }
+
+  hideHeatmap(): void {
+    this.heatmap?.destroy()
+    this.heatmap = null
+  }
+
+  setHeatmapPoints(points: HeatPoint[]): void {
+    if (!this.heatmap) return
+    this.heatmap.setPoints(points)
+    this._drawHeatmap()
+  }
+
+  private _drawHeatmap(): void {
+    if (!this.heatmap) return
+    const { w, h } = this._size()
+    const ox = this.cx - w / 2
+    const oy = this.cy - h / 2
+    // The heatmap needs center in pixel coords and zoom
+    this.heatmap.draw({ x: ox + w / 2, y: oy + h / 2 }, this.zoom)
   }
 
   private _addOverlay(layer: Record<string, unknown>): LayerHandle {
@@ -612,6 +650,9 @@ export class MapEngine {
 
     // Scale bar
     this._updateScaleBar(w)
+
+    // Heatmap
+    this._drawHeatmap()
   }
 
   private _drawClusters(ox: number, oy: number, w: number, h: number): void {

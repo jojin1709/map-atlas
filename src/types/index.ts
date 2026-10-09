@@ -20,6 +20,8 @@ export interface TileStyle {
   tiles: string[]
   attribution: string
   maxZoom?: number
+  /** CSS filter applied to tile layer (e.g. for dark mode). */
+  cssFilter?: string
 }
 
 export interface RoutingProfile {

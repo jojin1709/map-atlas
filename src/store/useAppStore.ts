@@ -65,7 +65,16 @@ interface AppState {
   setDrawTool: (t: DrawTool) => void
   drawnShapes: DrawnShape[]
   addShape: (s: DrawnShape) => void
+  removeShape: (id: number) => void
   clearShapes: () => void
+
+  // Undo/Redo
+  undoStack: DrawnShape[][]
+  redoStack: DrawnShape[][]
+  undo: () => void
+  redo: () => void
+  canUndo: boolean
+  canRedo: boolean
 
   // Measure
   measureMode: boolean
@@ -172,8 +181,61 @@ export const useAppStore = create<AppState>((set, get) => ({
   drawTool: 'none',
   setDrawTool: t => set({ drawTool: t }),
   drawnShapes: [],
-  addShape: s => set(st => ({ drawnShapes: [...st.drawnShapes, s] })),
-  clearShapes: () => set({ drawnShapes: [] }),
+  addShape: s =>
+    set(st => ({
+      drawnShapes: [...st.drawnShapes, s],
+      undoStack: [...st.undoStack, st.drawnShapes],
+      redoStack: [],
+      canUndo: true,
+      canRedo: false,
+    })),
+  removeShape: id =>
+    set(st => ({
+      drawnShapes: st.drawnShapes.filter(x => x.id !== id),
+      undoStack: [...st.undoStack, st.drawnShapes],
+      redoStack: [],
+      canUndo: true,
+      canRedo: false,
+    })),
+  clearShapes: () =>
+    set(st => ({
+      drawnShapes: [],
+      undoStack: [...st.undoStack, st.drawnShapes],
+      redoStack: [],
+      canUndo: true,
+      canRedo: false,
+    })),
+
+  undoStack: [],
+  redoStack: [],
+  undo: () =>
+    set(st => {
+      if (!st.undoStack.length) return st
+      const prev = st.undoStack[st.undoStack.length - 1]
+      const newUndo = st.undoStack.slice(0, -1)
+      return {
+        drawnShapes: prev,
+        undoStack: newUndo,
+        redoStack: [...st.redoStack, st.drawnShapes],
+        canUndo: newUndo.length > 0,
+        canRedo: true,
+      }
+    }),
+  redo: () =>
+    set(st => {
+      if (!st.redoStack.length) return st
+      const next = st.redoStack[st.redoStack.length - 1]
+      const newRedo = st.redoStack.slice(0, -1)
+      return {
+        drawnShapes: next,
+        undoStack: [...st.undoStack, st.drawnShapes],
+        redoStack: newRedo,
+        canUndo: true,
+        canRedo: newRedo.length > 0,
+      }
+    }),
+  canUndo: false,
+  canRedo: false,
 
   measureMode: false,
   measurePts: [],

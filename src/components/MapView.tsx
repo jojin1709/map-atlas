@@ -5,7 +5,7 @@ import { MapEngine } from '../engine/MapEngine'
 import { CONFIG } from '../config'
 import { useAppStore } from '../store/useAppStore'
 import * as api from '../services/api'
-import { haversine, formatDistance, coordsDMS, toDecimal } from '../services/geo'
+import { haversine, formatDistance, polygonArea, formatArea, coordsDMS, toDecimal } from '../services/geo'
 import type { LatLng, LayerHandleLike } from '../types'
 
 type LayerList = LayerHandleLike[]
@@ -14,6 +14,49 @@ function replaceLayers(engine: MapEngine, key: string, layers: LayerHandleLike[]
   const old = (engine as unknown as Record<string, LayerList | undefined>)[key]
   if (old) old.forEach(l => l.remove())
   ;(engine as unknown as Record<string, LayerList>)[key] = layers
+}
+
+/** Parse embed/URL params for shareable map views. */
+function parseUrlParams(): {
+  center?: [number, number]
+  zoom?: number
+  style?: string
+  embed?: boolean
+  markers?: Array<{ lat: number; lng: number; label?: string }>
+} {
+  const params = new URLSearchParams(location.search)
+  const hash = /^#(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?),(\d+(?:\.\d+)?)$/.exec(location.hash)
+
+  let center: [number, number] | undefined
+  let zoom: number | undefined
+
+  // Query params take priority over hash
+  const lat = parseFloat(params.get('lat') || '')
+  const lng = parseFloat(params.get('lng') || '')
+  const z = parseFloat(params.get('zoom') || '')
+  if (!isNaN(lat) && !isNaN(lng)) center = [lat, lng]
+  if (!isNaN(z)) zoom = z
+
+  if (!center && hash) center = [parseFloat(hash[1]), parseFloat(hash[2])]
+  if (!zoom && hash) zoom = parseFloat(hash[3])
+
+  const style = params.get('style') || undefined
+  const embed = params.get('embed') === 'true'
+
+  const markers: Array<{ lat: number; lng: number; label?: string }> = []
+  const markerParam = params.get('marker')
+  if (markerParam) {
+    for (const m of markerParam.split('|')) {
+      const [mlat, mlng, ...labelParts] = m.split(',')
+      const mLat = parseFloat(mlat)
+      const mLng = parseFloat(mlng)
+      if (!isNaN(mLat) && !isNaN(mLng)) {
+        markers.push({ lat: mLat, lng: mLng, label: labelParts.join(',') || undefined })
+      }
+    }
+  }
+
+  return { center, zoom, style, embed, markers }
 }
 
 export default function MapView() {
@@ -40,19 +83,28 @@ export default function MapView() {
   /* ---- create engine ---- */
   useEffect(() => {
     if (!containerRef.current) return
-    const hash = /^#(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?),(\d+(?:\.\d+)?)$/.exec(location.hash)
-    const center: [number, number] = hash
-      ? [parseFloat(hash[1]), parseFloat(hash[2])]
-      : CONFIG.center
-    const zoom = hash ? parseFloat(hash[3]) : CONFIG.zoom
+    const params = parseUrlParams()
+
+    const center = params.center || CONFIG.center
+    const zoom = params.zoom || CONFIG.zoom
+
+    // Apply URL style if provided
+    if (params.style && CONFIG.styles[params.style]) {
+      useAppStore.getState().setStyle(params.style)
+    }
+
+    const activeStyle = params.style && CONFIG.styles[params.style]
+      ? CONFIG.styles[params.style]
+      : CONFIG.styles[CONFIG.defaultStyle]
 
     const engine = new MapEngine(containerRef.current, {
       center,
       zoom,
       minZoom: CONFIG.minZoom,
       maxZoom: CONFIG.maxZoom,
-      tileUrls: CONFIG.styles[CONFIG.defaultStyle].tiles,
-      attribution: CONFIG.styles[CONFIG.defaultStyle].attribution,
+      tileUrls: activeStyle.tiles,
+      attribution: activeStyle.attribution,
+      cssFilter: activeStyle.cssFilter,
       keyboard: true,
       inertia: true,
       scaleBar: true,
@@ -60,6 +112,13 @@ export default function MapView() {
     engineRef.current = engine
 
     window.__mapEngine = () => engineRef.current
+
+    // Add markers from URL params
+    if (params.markers?.length) {
+      for (const m of params.markers) {
+        engine.addMarker(m, { label: m.label, color: '#ef4444', size: 12 })
+      }
+    }
 
     engine.on('moveend', () => {
       const c = engine.getCenter()
@@ -117,7 +176,7 @@ export default function MapView() {
     const engine = engineRef.current
     if (!engine) return
     const s = CONFIG.styles[style]
-    if (s) engine.setTiles(s.tiles, s.attribution)
+    if (s) engine.setTiles(s.tiles, s.attribution, s.cssFilter)
   }, [style])
 
   /* ---- open popup ---- */
@@ -389,7 +448,12 @@ export default function MapView() {
     if (!measurePts.length) return ''
     let total = 0
     for (let i = 1; i < measurePts.length; i++) total += haversine(measurePts[i - 1], measurePts[i])
-    return `Total: ${formatDistance(total)} (${measurePts.length} points)`
+    let areaStr = ''
+    if (measurePts.length >= 3) {
+      const area = polygonArea(measurePts)
+      areaStr = ` · Area: ${formatArea(area)}`
+    }
+    return `Total: ${formatDistance(total)}${areaStr} (${measurePts.length} points)`
   })()
 
   return (

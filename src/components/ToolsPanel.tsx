@@ -1,4 +1,4 @@
-/* Tools panel: measure, draw, style, weather, geolocation, track, share, clear. */
+/* Tools panel: measure, draw, undo/redo, style, weather, heatmap, geolocation, track, share, clear. */
 
 import { useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
@@ -10,6 +10,7 @@ import { getEngine } from '../services/mapRef'
 export default function ToolsPanel() {
   const [weatherInfo, setWeatherInfo] = useState('')
   const [weatherLoading, setWeatherLoading] = useState(false)
+  const [heatmapOn, setHeatmapOn] = useState(false)
 
   const style = useAppStore(s => s.style)
   const dark = useAppStore(s => s.dark)
@@ -20,6 +21,10 @@ export default function ToolsPanel() {
   const userLocation = useAppStore(s => s.userLocation)
   const fullscreen = useAppStore(s => s.fullscreen)
   const coordPickerMode = useAppStore(s => s.coordPickerMode)
+  const canUndo = useAppStore(s => s.canUndo)
+  const canRedo = useAppStore(s => s.canRedo)
+  const places = useAppStore(s => s.places)
+  const searchResults = useAppStore(s => s.searchResults)
 
   const getWeather = async () => {
     const map = getEngine()
@@ -38,6 +43,28 @@ export default function ToolsPanel() {
     } finally {
       setWeatherLoading(false)
     }
+  }
+
+  const toggleHeatmap = () => {
+    const engine = getEngine()
+    if (!engine) return
+    if (heatmapOn) {
+      engine.hideHeatmap()
+      setHeatmapOn(false)
+      return
+    }
+    // Build heatmap from places + search results + user location
+    const pts = [
+      ...places.map(p => ({ lat: p.lat, lng: p.lng, weight: 1 })),
+      ...searchResults.map(r => ({ lat: r.lat, lng: r.lng, weight: 0.8 })),
+    ]
+    if (userLocation) pts.push({ ...userLocation, weight: 1.5 })
+    if (!pts.length) {
+      useAppStore.getState().showToast('No data points for heatmap — add places or search first')
+      return
+    }
+    engine.showHeatmap(pts, { radius: 30, maxOpacity: 0.6 })
+    setHeatmapOn(true)
   }
 
   const locate = () => {
@@ -73,6 +100,8 @@ export default function ToolsPanel() {
     store.clearShapes()
     store.clearMeasure()
     store.setSearchResults([])
+    getEngine()?.hideHeatmap()
+    setHeatmapOn(false)
     useAppStore.getState().showToast('Map cleared')
   }
 
@@ -102,7 +131,7 @@ export default function ToolsPanel() {
     <section>
       <h2>Tools</h2>
 
-      {/* Measure + Draw */}
+      {/* Measure + Draw + Undo/Redo */}
       <div className="flex gap-1.5 flex-wrap">
         <button
           onClick={() => useAppStore.getState().toggleMeasure()}
@@ -124,6 +153,22 @@ export default function ToolsPanel() {
             {t === 'line' ? '✏ Line' : t === 'polygon' ? '⬠ Poly' : '▭ Rect'}
           </button>
         ))}
+        <button
+          onClick={() => useAppStore.getState().undo()}
+          disabled={!canUndo}
+          className="ghost"
+          title="Undo (Ctrl+Z)"
+        >
+          ↩ Undo
+        </button>
+        <button
+          onClick={() => useAppStore.getState().redo()}
+          disabled={!canRedo}
+          className="ghost"
+          title="Redo (Ctrl+Y)"
+        >
+          ↪ Redo
+        </button>
         <button onClick={() => useAppStore.getState().clearShapes()} className="ghost">
           Clear shapes
         </button>
@@ -132,7 +177,7 @@ export default function ToolsPanel() {
         <div className="muted text-xs mt-1">Click points, double-click to finish</div>
       )}
 
-      {/* Style + Weather */}
+      {/* Style + Weather + Heatmap */}
       <div className="flex gap-1.5 mt-2">
         <select
           value={style}
@@ -145,6 +190,9 @@ export default function ToolsPanel() {
         </select>
         <button onClick={getWeather} disabled={weatherLoading} className="ghost">
           Weather
+        </button>
+        <button onClick={toggleHeatmap} className={heatmapOn ? 'active' : 'ghost'}>
+          🔥
         </button>
       </div>
       {weatherInfo && <div className="muted text-xs mt-1">{weatherInfo}</div>}
@@ -193,3 +241,4 @@ export default function ToolsPanel() {
     </section>
   )
 }
+

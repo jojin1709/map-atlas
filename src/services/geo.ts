@@ -13,6 +13,26 @@ export function haversine(a: LatLng, b: LatLng): number {
   return 2 * R * Math.asin(Math.sqrt(h))
 }
 
+/* Spherical polygon area in square meters (spherical excess / shoelace on sphere). */
+export function polygonArea(pts: LatLng[]): number {
+  if (pts.length < 3) return 0
+  const R = 6371000
+  const toRad = (d: number) => (d * Math.PI) / 180
+  let total = 0
+  for (let i = 0; i < pts.length; i++) {
+    const p1 = pts[i]
+    const p2 = pts[(i + 1) % pts.length]
+    total += toRad(p2.lng - p1.lng) * (2 + Math.sin(toRad(p1.lat)) + Math.sin(toRad(p2.lat)))
+  }
+  return Math.abs((total * R * R) / 2)
+}
+
+export function formatArea(sqm: number): string {
+  if (sqm >= 1e6) return `${(sqm / 1e6).toFixed(2)} km²`
+  if (sqm >= 1e4) return `${(sqm / 1e4).toFixed(2)} ha`
+  return `${Math.round(sqm)} m²`
+}
+
 export function formatDistance(m: number): string {
   return m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${Math.round(m)} m`
 }

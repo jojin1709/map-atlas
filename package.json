@@ -1,26 +1,86 @@
 {
-  "name": "mapapp",
-  "private": true,
-  "version": "1.0.0",
+  "name": "map-atlas",
+  "version": "1.0.2",
+  "description": "Custom dependency-free slippy map engine with React wrapper, routing, geocoding, and more.",
   "type": "module",
+  "main": "./dist/map-atlas.cjs",
+  "module": "./dist/map-atlas.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/map-atlas.js",
+      "require": "./dist/map-atlas.cjs"
+    },
+    "./styles.css": "./dist/map-atlas.css"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": [
+    "*.css"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "build:lib": "vite build --mode lib && tsc -p tsconfig.lib.json",
+    "build:demo": "tsc -b && vite build",
+    "preview": "vite preview",
+    "prepublishOnly": "npm run build:lib"
   },
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "zustand": "^4.5.5"
+  "keywords": [
+    "map",
+    "slippy-map",
+    "openstreetmap",
+    "react",
+    "typescript",
+    "map-engine",
+    "geocoding",
+    "routing",
+    "tile-map",
+    "web-mercator",
+    "marker-cluster",
+    "gpx",
+    "geojson",
+    "kml"
+  ],
+  "author": "Jojin John",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jojin1709/map-atlas.git"
+  },
+  "homepage": "https://github.com/jojin1709/map-atlas#readme",
+  "bugs": {
+    "url": "https://github.com/jojin1709/map-atlas/issues"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
   },
   "devDependencies": {
+    "@types/node": "^26.6.4",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.47",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "tailwindcss": "^3.4.14",
     "typescript": "^5.6.3",
     "vite": "^5.4.10"
+  },
+  "dependencies": {
+    "zustand": "^4.5.5"
   }
 }
