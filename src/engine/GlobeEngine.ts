@@ -14,12 +14,64 @@ import * as THREE from 'three'
 import type { LatLng } from '../types'
 import { TILE_STYLES } from '../tileStyles'
 
+export interface CountryLabelData {
+  name: string
+  lat: number
+  lng: number
+  code?: string
+}
+
+export const WORLD_COUNTRIES: CountryLabelData[] = [
+  { name: 'India', lat: 20.5937, lng: 78.9629, code: 'IN' },
+  { name: 'United States', lat: 37.0902, lng: -95.7129, code: 'US' },
+  { name: 'China', lat: 35.8617, lng: 104.1954, code: 'CN' },
+  { name: 'Brazil', lat: -14.235, lng: -51.9253, code: 'BR' },
+  { name: 'Russia', lat: 61.524, lng: 105.3188, code: 'RU' },
+  { name: 'United Kingdom', lat: 55.3781, lng: -3.436, code: 'GB' },
+  { name: 'Australia', lat: -25.2744, lng: 133.7751, code: 'AU' },
+  { name: 'Canada', lat: 56.1304, lng: -106.3468, code: 'CA' },
+  { name: 'Germany', lat: 51.1657, lng: 10.4515, code: 'DE' },
+  { name: 'France', lat: 46.2276, lng: 2.2137, code: 'FR' },
+  { name: 'Japan', lat: 36.2048, lng: 138.2529, code: 'JP' },
+  { name: 'South Africa', lat: -30.5595, lng: 22.9375, code: 'ZA' },
+  { name: 'Egypt', lat: 26.8206, lng: 30.8025, code: 'EG' },
+  { name: 'Italy', lat: 41.8719, lng: 12.5674, code: 'IT' },
+  { name: 'Spain', lat: 40.4637, lng: -3.7492, code: 'ES' },
+  { name: 'Mexico', lat: 23.6345, lng: -102.5528, code: 'MX' },
+  { name: 'Argentina', lat: -38.4161, lng: -63.6167, code: 'AR' },
+  { name: 'Indonesia', lat: -0.7893, lng: 113.9213, code: 'ID' },
+  { name: 'Saudi Arabia', lat: 23.8859, lng: 45.0792, code: 'SA' },
+  { name: 'UAE', lat: 23.4241, lng: 53.8478, code: 'AE' },
+  { name: 'Nigeria', lat: 9.082, lng: 8.6753, code: 'NG' },
+  { name: 'Kenya', lat: -0.0236, lng: 37.9062, code: 'KE' },
+  { name: 'Turkey', lat: 38.9637, lng: 35.2433, code: 'TR' },
+  { name: 'South Korea', lat: 35.9078, lng: 127.7669, code: 'KR' },
+  { name: 'Thailand', lat: 15.87, lng: 100.9925, code: 'TH' },
+  { name: 'New Zealand', lat: -40.9006, lng: 174.886, code: 'NZ' },
+  { name: 'Norway', lat: 60.472, lng: 8.4689, code: 'NO' },
+  { name: 'Sweden', lat: 60.1282, lng: 18.6435, code: 'SE' },
+  { name: 'Iran', lat: 32.4279, lng: 53.688, code: 'IR' },
+  { name: 'Pakistan', lat: 30.3753, lng: 69.3451, code: 'PK' },
+  { name: 'Colombia', lat: 4.5709, lng: -74.2973, code: 'CO' },
+  { name: 'Peru', lat: -9.19, lng: -75.0152, code: 'PE' },
+  { name: 'Chile', lat: -35.6751, lng: -71.543, code: 'CL' },
+  { name: 'Morocco', lat: 31.7917, lng: -7.0926, code: 'MA' },
+  { name: 'Greece', lat: 39.0742, lng: 21.8243, code: 'GR' },
+  { name: 'Poland', lat: 51.9194, lng: 19.1451, code: 'PL' },
+  { name: 'Ukraine', lat: 48.3794, lng: 31.1656, code: 'UA' },
+  { name: 'Kazakhstan', lat: 48.0196, lng: 66.9237, code: 'KZ' },
+  { name: 'Mongolia', lat: 46.8625, lng: 103.8467, code: 'MN' },
+  { name: 'Greenland', lat: 71.7069, lng: -42.6043, code: 'GL' },
+  { name: 'Antarctica', lat: -82.8628, lng: 135.0, code: 'AQ' },
+]
+
 export interface GlobeEngineOptions {
   center?: [number, number]
   zoom?: number
   tileUrls?: string[]
   cssFilter?: string
   autoRotate?: boolean
+  showCountryLabels?: boolean
   onClick?: (latlng: LatLng) => void
   onMove?: (latlng: LatLng) => void
   onZoomInToFlat?: (center: LatLng) => void
@@ -72,6 +124,10 @@ export class GlobeEngine {
   private resizeObserver?: ResizeObserver
   private markers: GlobeMarker[] = []
   private markerElements: Map<string | number, HTMLElement> = new Map()
+
+  // Country labels
+  private countryElements: Map<string, HTMLElement> = new Map()
+  private showCountryLabels = true
 
   private tileUrls: string[] = TILE_STYLES.osm.tiles
   private cssFilter = ''
@@ -183,12 +239,14 @@ export class GlobeEngine {
       this.setCenter(opts.center[0], opts.center[1])
     }
     if (opts.autoRotate !== undefined) this.autoRotate = opts.autoRotate
+    if (opts.showCountryLabels !== undefined) this.showCountryLabels = opts.showCountryLabels
     if (opts.tileUrls) this.tileUrls = opts.tileUrls
     if (opts.cssFilter) this.cssFilter = opts.cssFilter
     this.clickCb = opts.onClick
     this.moveCb = opts.onMove
     this.zoomInFlatCb = opts.onZoomInToFlat
 
+    this._initCountryLabels()
     this._bindEvents()
     this._loadTiles()
 
@@ -687,6 +745,68 @@ export class GlobeEngine {
     return this.autoRotate
   }
 
+  toggleCountryLabels(): boolean {
+    this.showCountryLabels = !this.showCountryLabels
+    for (const el of this.countryElements.values()) {
+      el.style.display = this.showCountryLabels ? 'block' : 'none'
+    }
+    return this.showCountryLabels
+  }
+
+  setCountryLabels(show: boolean): void {
+    this.showCountryLabels = show
+    for (const el of this.countryElements.values()) {
+      el.style.display = this.showCountryLabels ? 'block' : 'none'
+    }
+  }
+
+  getCountryLabels(): boolean {
+    return this.showCountryLabels
+  }
+
+  private _initCountryLabels(): void {
+    for (const c of WORLD_COUNTRIES) {
+      const el = document.createElement('div')
+      el.className = 'globe-country-label'
+      el.style.position = 'absolute'
+      el.style.transform = 'translate(-50%, -50%)'
+      el.style.pointerEvents = 'auto'
+      el.style.cursor = 'pointer'
+      el.style.display = 'none'
+      el.style.whiteSpace = 'nowrap'
+      el.style.userSelect = 'none'
+      el.style.transition = 'transform 0.15s ease, opacity 0.15s ease, color 0.15s ease'
+      el.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif'
+      el.style.fontSize = '11px'
+      el.style.fontWeight = '700'
+      el.style.letterSpacing = '1px'
+      el.style.textTransform = 'uppercase'
+      el.style.color = 'rgba(255, 255, 255, 0.92)'
+      el.style.textShadow = '0 1px 3px rgba(0,0,0,0.95), 0 0 5px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.8)'
+      el.textContent = c.name
+      el.setAttribute('title', `Center on ${c.name}`)
+
+      el.addEventListener('mouseenter', () => {
+        el.style.transform = 'translate(-50%, -50%) scale(1.15)'
+        el.style.color = '#ffffff'
+        el.style.textShadow = '0 0 12px rgba(56, 189, 248, 0.95), 0 1px 3px rgba(0,0,0,1), 0 0 6px rgba(0,0,0,0.9)'
+      })
+      el.addEventListener('mouseleave', () => {
+        el.style.transform = 'translate(-50%, -50%) scale(1.0)'
+        el.style.color = 'rgba(255, 255, 255, 0.92)'
+        el.style.textShadow = '0 1px 3px rgba(0,0,0,0.95), 0 0 5px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.8)'
+      })
+      el.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this.flyTo(c.lat, c.lng, 2.3)
+        this.moveCb?.({ lat: c.lat, lng: c.lng })
+      })
+
+      this.overlayEl.appendChild(el)
+      this.countryElements.set(c.name, el)
+    }
+  }
+
   /** Raycast from screen coordinate to sphere lat/lng */
   raycast(screenX: number, screenY: number): LatLng | null {
     const w = this.container.clientWidth
@@ -711,7 +831,7 @@ export class GlobeEngine {
   }
 
   /** Project lat/lng to 2D screen coordinate with horizon culling */
-  projectToScreen(lat: number, lng: number): { x: number; y: number; visible: boolean } {
+  projectToScreen(lat: number, lng: number): { x: number; y: number; visible: boolean; dot: number } {
     const w = this.container.clientWidth
     const h = this.container.clientHeight
 
@@ -730,15 +850,16 @@ export class GlobeEngine {
     // Check if facing camera
     const camDir = new THREE.Vector3().subVectors(this.camera.position, worldPos).normalize()
     const normal = worldPos.clone().normalize()
-    if (normal.dot(camDir) < 0.05) {
-      return { x: 0, y: 0, visible: false }
+    const dot = normal.dot(camDir)
+    if (dot < 0.05) {
+      return { x: 0, y: 0, visible: false, dot: 0 }
     }
 
     const projected = worldPos.project(this.camera)
     const x = ((projected.x + 1) / 2) * w
     const y = ((-projected.y + 1) / 2) * h
 
-    return { x, y, visible: true }
+    return { x, y, visible: true, dot }
   }
 
   private _animate(): void {
@@ -771,6 +892,7 @@ export class GlobeEngine {
   }
 
   private _renderMarkers(): void {
+    // Render custom pins
     for (const m of this.markers) {
       const el = this.markerElements.get(m.id)
       if (!el) continue
@@ -783,11 +905,38 @@ export class GlobeEngine {
         el.style.display = 'none'
       }
     }
+
+    // Render country labels
+    if (this.showCountryLabels) {
+      for (const c of WORLD_COUNTRIES) {
+        const el = this.countryElements.get(c.name)
+        if (!el) continue
+        const proj = this.projectToScreen(c.lat, c.lng)
+        if (proj.visible) {
+          el.style.display = 'block'
+          el.style.left = `${proj.x}px`
+          el.style.top = `${proj.y}px`
+          // Smooth fade near horizon
+          const alpha = Math.min(1, Math.max(0.15, (proj.dot - 0.05) * 2.2))
+          el.style.opacity = alpha.toFixed(2)
+        } else {
+          el.style.display = 'none'
+        }
+      }
+    } else {
+      for (const el of this.countryElements.values()) {
+        el.style.display = 'none'
+      }
+    }
   }
 
   destroy(): void {
     if (this.rafId) cancelAnimationFrame(this.rafId)
     this.resizeObserver?.disconnect()
+    for (const el of this.countryElements.values()) {
+      el.remove()
+    }
+    this.countryElements.clear()
     this.renderer.dispose()
     this.renderer.domElement.remove()
     this.overlayEl.remove()

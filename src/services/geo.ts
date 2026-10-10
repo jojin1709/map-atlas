@@ -89,6 +89,95 @@ export function parseGPX(text: string): SavedPlace[] {
   }))
 }
 
+export interface GPXTrackResult {
+  name: string
+  points: LatLng[]
+  elevations: number[]
+  distance: number
+}
+
+export function parseGPXTrack(text: string): GPXTrackResult {
+  const doc = new DOMParser().parseFromString(text, 'application/xml')
+  if (doc.getElementsByTagName('parsererror').length) throw new Error('Invalid GPX file format')
+
+  const name =
+    doc.getElementsByTagName('name')[0]?.textContent ||
+    doc.getElementsByTagName('trk')[0]?.getElementsByTagName('name')[0]?.textContent ||
+    'Imported Trail'
+
+  const trkpts = Array.from(doc.getElementsByTagName('trkpt'))
+  const points: LatLng[] = []
+  const elevations: number[] = []
+
+  for (const pt of trkpts) {
+    const lat = parseFloat(pt.getAttribute('lat') || '')
+    const lng = parseFloat(pt.getAttribute('lon') || '')
+    if (!isNaN(lat) && !isNaN(lng)) {
+      points.push({ lat, lng })
+      const ele = pt.getElementsByTagName('ele')[0]?.textContent
+      elevations.push(ele ? parseFloat(ele) : 0)
+    }
+  }
+
+  // Fallback to route points <rtept> if no <trkpt>
+  if (!points.length) {
+    const rtepts = Array.from(doc.getElementsByTagName('rtept'))
+    for (const pt of rtepts) {
+      const lat = parseFloat(pt.getAttribute('lat') || '')
+      const lng = parseFloat(pt.getAttribute('lon') || '')
+      if (!isNaN(lat) && !isNaN(lng)) {
+        points.push({ lat, lng })
+      }
+    }
+  }
+
+  let distance = 0
+  for (let i = 1; i < points.length; i++) {
+    distance += haversine(points[i - 1], points[i])
+  }
+
+  return { name, points, elevations, distance }
+}
+
+export function exportShapesToGPX(shapes: { points: LatLng[]; label?: string }[], title = 'MapAtlas Export'): string {
+  const tracks = shapes
+    .map(
+      (s, idx) => `  <trk>
+    <name>${escapeXml(s.label || `Shape ${idx + 1}`)}</name>
+    <trkseg>
+${s.points.map(p => `      <trkpt lat="${p.lat}" lon="${p.lng}" />`).join('\n')}
+    </trkseg>
+  </trk>`
+    )
+    .join('\n')
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="MapAtlas" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>${escapeXml(title)}</name></metadata>
+${tracks}
+</gpx>`
+}
+
+export function exportShapesToGeoJSON(shapes: { type: string; points: LatLng[]; label?: string }[]): object {
+  return {
+    type: 'FeatureCollection',
+    features: shapes.map((s, idx) => ({
+      type: 'Feature',
+      properties: { name: s.label || `Shape ${idx + 1}`, type: s.type },
+      geometry:
+        s.type === 'polygon' || s.type === 'rectangle'
+          ? {
+              type: 'Polygon',
+              coordinates: [[...s.points.map(p => [p.lng, p.lat]), [s.points[0].lng, s.points[0].lat]]],
+            }
+          : {
+              type: 'LineString',
+              coordinates: s.points.map(p => [p.lng, p.lat]),
+            },
+    })),
+  }
+}
+
 /* ---- GeoJSON ---- */
 
 export function toGeoJSON(places: SavedPlace[]): object {
@@ -102,15 +191,18 @@ export function toGeoJSON(places: SavedPlace[]): object {
   }
 }
 
-export function parseGeoJSON(obj: { features?: Array<{ geometry?: { type: string; coordinates: number[] }; properties?: { name?: string } }> }): SavedPlace[] {
+export function parseGeoJSON(obj: { features?: Array<{ geometry?: { type: string; coordinates: unknown }; properties?: { name?: string } }> }): SavedPlace[] {
   return (obj.features || [])
     .filter(f => f.geometry?.type === 'Point')
-    .map(f => ({
-      id: Date.now() + Math.random(),
-      name: f.properties?.name || 'Imported',
-      lng: f.geometry!.coordinates[0],
-      lat: f.geometry!.coordinates[1],
-    }))
+    .map(f => {
+      const coords = f.geometry!.coordinates as [number, number]
+      return {
+        id: Date.now() + Math.random(),
+        name: f.properties?.name || 'Imported',
+        lng: coords[0],
+        lat: coords[1],
+      }
+    })
 }
 
 /* ---- KML ---- */

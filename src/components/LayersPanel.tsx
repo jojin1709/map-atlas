@@ -12,6 +12,7 @@ const LAYER_LABELS: Record<keyof LayerVisibility, string> = {
   track: 'GPS track',
   userLocation: 'Your location',
   places: 'Saved places',
+  earthquakes: 'Live Earthquakes (USGS)',
 }
 
 const LAYER_ICONS: Record<keyof LayerVisibility, string> = {
@@ -23,6 +24,7 @@ const LAYER_ICONS: Record<keyof LayerVisibility, string> = {
   track: '⏺',
   userLocation: '📡',
   places: '⭐',
+  earthquakes: '🌋',
 }
 
 export default function LayersPanel() {

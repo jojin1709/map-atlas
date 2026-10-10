@@ -1,7 +1,7 @@
-/* Global app state (Zustand). */
-
 import { create } from 'zustand'
 import type { DrawTool, DrawnShape, GeocodeResult, LatLng, OSRMRoute, SavedPlace, TrackPoint } from '../types'
+import type { WikipediaPlaceSummary, EarthquakeRecord } from '../services/api'
+import { fetchLiveEarthquakes } from '../services/api'
 
 export interface LayerVisibility {
   routes: boolean
@@ -12,6 +12,7 @@ export interface LayerVisibility {
   track: boolean
   userLocation: boolean
   places: boolean
+  earthquakes: boolean
 }
 
 export interface ContextMenuState {
@@ -97,6 +98,7 @@ interface AppState {
   // Track recording
   recording: boolean
   track: TrackPoint[]
+  setTrack: (t: TrackPoint[]) => void
   setRecording: (r: boolean) => void
   addTrackPoint: (p: TrackPoint) => void
   clearTrack: () => void
@@ -125,6 +127,14 @@ interface AppState {
   // Fullscreen
   fullscreen: boolean
   toggleFullscreen: () => void
+
+  // Live Earthquakes
+  earthquakeData: EarthquakeRecord[]
+  fetchEarthquakes: () => Promise<void>
+
+  // Selected Wikipedia Place Card
+  selectedPlace: WikipediaPlaceSummary | null
+  setSelectedPlace: (p: WikipediaPlaceSummary | null) => void
 }
 
 function loadPlaces(): SavedPlace[] {
@@ -274,6 +284,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   recording: false,
   track: [],
+  setTrack: t => set({ track: t }),
   setRecording: r => set({ recording: r }),
   addTrackPoint: p => set(s => ({ track: [...s.track, p] })),
   clearTrack: () => set({ track: [] }),
@@ -290,11 +301,32 @@ export const useAppStore = create<AppState>((set, get) => ({
     track: true,
     userLocation: true,
     places: true,
+    earthquakes: false,
   },
-  toggleLayer: key =>
+  toggleLayer: key => {
+    const next = !get().layers[key]
     set(s => ({
-      layers: { ...s.layers, [key]: !s.layers[key] },
-    })),
+      layers: { ...s.layers, [key]: next },
+    }))
+    if (key === 'earthquakes' && next && !get().earthquakeData.length) {
+      get().fetchEarthquakes()
+    }
+  },
+
+  earthquakeData: [],
+  fetchEarthquakes: async () => {
+    try {
+      get().showToast('Fetching USGS live earthquakes…')
+      const data = await fetchLiveEarthquakes()
+      set({ earthquakeData: data })
+      get().showToast(`Loaded ${data.length} recent earthquakes`)
+    } catch (err) {
+      get().showToast(err instanceof Error ? err.message : 'Earthquake feed failed')
+    }
+  },
+
+  selectedPlace: null,
+  setSelectedPlace: p => set({ selectedPlace: p }),
 
   contextMenu: { visible: false, x: 0, y: 0, latlng: { lat: 0, lng: 0 } },
   showContextMenu: (x, y, latlng) => set({ contextMenu: { visible: true, x, y, latlng } }),

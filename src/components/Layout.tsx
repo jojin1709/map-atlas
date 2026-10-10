@@ -10,6 +10,7 @@ import PlacesPanel from './PlacesPanel'
 import ContextMenu from './ContextMenu'
 import Toast from './Toast'
 import NavOverlay from './NavOverlay'
+import PlaceCard from './PlaceCard'
 
 function isEmbedMode(): boolean {
   const params = new URLSearchParams(location.search)
@@ -63,6 +64,7 @@ export default function Layout() {
       </aside>
 
       <ContextMenu />
+      <PlaceCard />
     </div>
   )
 }

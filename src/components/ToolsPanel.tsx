@@ -1,10 +1,10 @@
 /* Tools panel: measure, draw, undo/redo, style, weather, heatmap, geolocation, track, share, clear. */
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import * as api from '../services/api'
 import { CONFIG } from '../config'
-import { coordsDMS } from '../services/geo'
+import { coordsDMS, parseGPX, parseGPXTrack, toGPX, parseGeoJSON, toGeoJSON, download } from '../services/geo'
 import { getEngine } from '../services/mapRef'
 
 export default function ToolsPanel() {
@@ -127,6 +127,79 @@ export default function ToolsPanel() {
     return d
   })()
 
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const text = String(reader.result || '')
+        if (file.name.toLowerCase().endsWith('.gpx') || text.includes('<gpx')) {
+          const trackRes = parseGPXTrack(text)
+          if (trackRes.points.length) {
+            const trackPts = trackRes.points.map((p, i) => ({
+              lat: p.lat,
+              lng: p.lng,
+              time: Date.now() + i * 1000,
+              alt: trackRes.elevations[i],
+            }))
+            useAppStore.getState().setTrack(trackPts)
+            if (trackPts[0]) getEngine()?.flyTo(trackPts[0].lat, trackPts[0].lng, 13)
+            useAppStore.getState().showToast(`Imported GPX track: ${trackPts.length} points`)
+          } else {
+            const wpts = parseGPX(text)
+            if (wpts.length) {
+              wpts.forEach(p => useAppStore.getState().addPlace(p))
+              if (wpts[0]) getEngine()?.flyTo(wpts[0].lat, wpts[0].lng, 13)
+              useAppStore.getState().showToast(`Imported ${wpts.length} waypoints from GPX`)
+            } else {
+              throw new Error('No GPS trackpoints found in GPX')
+            }
+          }
+        } else {
+          const json = JSON.parse(text)
+          const imported = parseGeoJSON(json)
+          if (imported.length) {
+            imported.forEach(p => useAppStore.getState().addPlace(p))
+            getEngine()?.flyTo(imported[0].lat, imported[0].lng, 12)
+            useAppStore.getState().showToast(`Imported ${imported.length} places from GeoJSON`)
+          }
+        }
+      } catch (err) {
+        useAppStore.getState().showToast(err instanceof Error ? err.message : 'Import failed')
+      }
+    }
+    reader.readAsText(file)
+    e.target.value = ''
+  }
+
+  const exportGPX = () => {
+    const store = useAppStore.getState()
+    const placesToExport = store.places.length
+      ? store.places
+      : store.track.map((pt, i) => ({ id: i, name: `Track Pt ${i + 1}`, lat: pt.lat, lng: pt.lng }))
+    if (!placesToExport.length) {
+      store.showToast('No track or places to export as GPX')
+      return
+    }
+    const gpxText = toGPX(placesToExport)
+    download('atlas_track.gpx', gpxText, 'application/gpx+xml')
+    store.showToast('Exported GPX file')
+  }
+
+  const exportGeoJSON = () => {
+    const store = useAppStore.getState()
+    if (!store.places.length) {
+      store.showToast('No saved places to export as GeoJSON')
+      return
+    }
+    const geo = toGeoJSON(store.places)
+    download('atlas_places.geojson', JSON.stringify(geo, null, 2), 'application/geo+json')
+    store.showToast('Exported GeoJSON file')
+  }
+
   return (
     <section>
       <h2>Tools</h2>
@@ -216,6 +289,27 @@ export default function ToolsPanel() {
           📍 {userLocation.lat.toFixed(5)}, {userLocation.lng.toFixed(5)}
         </div>
       )}
+
+      {/* GPX & GeoJSON Import / Export */}
+      <div className="flex gap-1.5 mt-2 flex-wrap items-center">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".gpx,.geojson,.json"
+          onChange={handleFileImport}
+          className="hidden"
+          style={{ display: 'none' }}
+        />
+        <button onClick={() => fileInputRef.current?.click()} className="ghost" title="Import GPX or GeoJSON file">
+          📂 Import GPX
+        </button>
+        <button onClick={exportGPX} className="ghost" title="Export current track or places as GPX">
+          💾 GPX
+        </button>
+        <button onClick={exportGeoJSON} className="ghost" title="Export places as GeoJSON">
+          💾 GeoJSON
+        </button>
+      </div>
 
       {/* Share + Dark + Fullscreen + Print + Coord Picker + Clear */}
       <div className="flex gap-1.5 mt-2 flex-wrap">

@@ -84,6 +84,7 @@ export default function MapView() {
   const drawTool = useAppStore(s => s.drawTool)
   const layers = useAppStore(s => s.layers)
   const places = useAppStore(s => s.places)
+  const earthquakeData = useAppStore(s => s.earthquakeData)
 
   /* ---- create engine ---- */
   useEffect(() => {
@@ -244,6 +245,32 @@ export default function MapView() {
         api.elevation(p.lat, p.lng)
           .then(e => { elev.textContent = `Elevation: ${Math.round(e)} m` })
           .catch(err => { elev.textContent = err.message })
+      }),
+      mkBtn('Explore 📖', () => {
+        useAppStore.getState().showToast('Exploring place…')
+        const query = title || sub.textContent || ''
+        const doNearby = () => {
+          api.fetchNearbyWikipedia(p.lat, p.lng).then(nearby => {
+            if (nearby) {
+              useAppStore.getState().setSelectedPlace({ ...nearby, lat: p.lat, lng: p.lng })
+            } else {
+              useAppStore.getState().showToast('No articles found nearby')
+            }
+          }).catch(() => useAppStore.getState().showToast('Explore info unavailable'))
+        }
+
+        if (query && !query.includes('Loading') && !query.includes('unavailable')) {
+          api.fetchWikipediaSummary(query).then(info => {
+            if (info) {
+              useAppStore.getState().setSelectedPlace({ ...info, lat: p.lat, lng: p.lng })
+            } else {
+              doNearby()
+            }
+          }).catch(() => doNearby())
+        } else {
+          doNearby()
+        }
+        engine.closePopup()
       })
     )
 
@@ -311,16 +338,46 @@ export default function MapView() {
     if (s) globeEngineRef.current.setStyle(style, s.tiles, s.cssFilter)
   }, [style])
 
-  // Sync markers (user location, search results, places) to globe
+  // Sync markers (user location, search results, places, earthquakes) to globe
   useEffect(() => {
     if (!globeEngineRef.current) return
     const gMarkers = [
       ...(userLocation ? [{ id: 'user', lat: userLocation.lat, lng: userLocation.lng, label: 'Your location', color: '#3b82f6' }] : []),
       ...searchResults.map((r, i) => ({ id: `sr-${i}`, lat: r.lat, lng: r.lng, label: r.label.split(',')[0], color: '#ef4444' })),
       ...places.map(p => ({ id: `p-${p.id}`, lat: p.lat, lng: p.lng, label: p.name, color: '#f59e0b' })),
+      ...(layers.earthquakes ? earthquakeData.slice(0, 50).map(q => ({
+        id: `eq-${q.id}`,
+        lat: q.lat,
+        lng: q.lng,
+        label: `M${q.mag.toFixed(1)} ${q.place.split('of ')[1] || q.place}`,
+        color: q.mag >= 5 ? '#ef4444' : '#eab308',
+      })) : []),
     ]
     globeEngineRef.current.setMarkers(gMarkers)
-  }, [searchResults, userLocation, places, globeMode])
+  }, [searchResults, userLocation, places, layers.earthquakes, earthquakeData, globeMode])
+
+  /* ---- draw earthquakes on 2D map ---- */
+  useEffect(() => {
+    const engine = engineRef.current
+    if (!engine) return
+    if (!layers.earthquakes || !earthquakeData.length) {
+      replaceLayers(engine, '__earthquakeLayers', [])
+      return
+    }
+    const lls: LayerHandleLike[] = []
+    earthquakeData.forEach(q => {
+      const color = q.mag >= 6 ? '#dc2626' : q.mag >= 4.5 ? '#ea580c' : '#ca8a04'
+      const rad = Math.max(5, Math.min(22, Math.round(q.mag * 3.2)))
+      const c = engine.addCircle({ lat: q.lat, lng: q.lng }, {
+        radius: rad,
+        fill: color,
+        stroke: '#ffffff',
+        strokeWidth: 1.5,
+      })
+      lls.push(c)
+    })
+    replaceLayers(engine, '__earthquakeLayers', lls)
+  }, [layers.earthquakes, earthquakeData])
 
   // Clean up globe on unmount
   useEffect(() => {
@@ -591,6 +648,16 @@ export default function MapView() {
               title="Toggle earth rotation"
             >
               🔄
+            </button>
+            <button
+              onClick={() => {
+                const visible = globeEngineRef.current?.toggleCountryLabels()
+                useAppStore.getState().showToast(visible ? 'Country labels shown' : 'Country labels hidden')
+              }}
+              className="w-9 h-9 flex items-center justify-center text-sm hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
+              title="Toggle country labels"
+            >
+              🏷️
             </button>
           </div>
         </div>

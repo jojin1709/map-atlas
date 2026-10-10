@@ -259,3 +259,124 @@ export function weatherCodeToEmoji(code: number): string {
   if (code <= 86) return '🌨'
   return '⛈'
 }
+
+/* ---- Wikipedia Places & POI ---- */
+
+export interface WikipediaPlaceSummary {
+  title: string
+  description?: string
+  extract: string
+  thumbnail?: string
+  url?: string
+  lat?: number
+  lng?: number
+}
+
+export async function fetchWikipediaSummary(query: string): Promise<WikipediaPlaceSummary | null> {
+  const cleanTitle = query.split(',')[0].trim()
+  if (!cleanTitle) return null
+
+  try {
+    // 1. Try direct page summary
+    const directUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(cleanTitle.replace(/\s+/g, '_'))}`
+    const res = await fetch(directUrl)
+    if (res.ok) {
+      const data = await res.json()
+      if (data.extract) {
+        return {
+          title: data.title,
+          description: data.description,
+          extract: data.extract,
+          thumbnail: data.thumbnail?.source,
+          url: data.content_urls?.desktop?.page,
+          lat: data.coordinates?.lat,
+          lng: data.coordinates?.lon,
+        }
+      }
+    }
+  } catch {
+    /* fallback to search */
+  }
+
+  try {
+    // 2. Fallback to Wikipedia search API
+    const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(cleanTitle)}&utf8=&format=json&origin=*`
+    const searchData = await json<{ query?: { search?: Array<{ title: string; snippet: string }> } }>(searchUrl)
+    const firstHit = searchData.query?.search?.[0]
+    if (firstHit) {
+      const sumUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(firstHit.title.replace(/\s+/g, '_'))}`
+      const sumRes = await fetch(sumUrl)
+      if (sumRes.ok) {
+        const sumData = await sumRes.json()
+        return {
+          title: sumData.title,
+          description: sumData.description,
+          extract: sumData.extract || firstHit.snippet.replace(/<[^>]*>/g, ''),
+          thumbnail: sumData.thumbnail?.source,
+          url: sumData.content_urls?.desktop?.page,
+          lat: sumData.coordinates?.lat,
+          lng: sumData.coordinates?.lon,
+        }
+      }
+    }
+  } catch {
+    /* unavailable */
+  }
+
+  return null
+}
+
+export async function fetchNearbyWikipedia(lat: number, lng: number): Promise<WikipediaPlaceSummary | null> {
+  try {
+    const geoUrl = `https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}|${lng}&gsradius=10000&gslimit=1&format=json&origin=*`
+    const geoData = await json<{ query?: { geosearch?: Array<{ title: string; lat: number; lon: number }> } }>(geoUrl)
+    const hit = geoData.query?.geosearch?.[0]
+    if (hit) {
+      const summary = await fetchWikipediaSummary(hit.title)
+      if (summary) {
+        return { ...summary, lat: hit.lat, lng: hit.lon }
+      }
+    }
+  } catch {
+    /* unavailable */
+  }
+  return null
+}
+
+/* ---- USGS Earthquakes (Live 24h Feed) ---- */
+
+export interface EarthquakeRecord {
+  id: string
+  lat: number
+  lng: number
+  mag: number
+  place: string
+  depth: number
+  time: number
+  url?: string
+}
+
+export async function fetchLiveEarthquakes(): Promise<EarthquakeRecord[]> {
+  const url = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson'
+  const data = await json<{
+    features?: Array<{
+      id: string
+      properties: { mag: number; place: string; time: number; url?: string }
+      geometry: { coordinates: [number, number, number] }
+    }>
+  }>(url)
+
+  if (!data.features) return []
+  return data.features
+    .map(f => ({
+      id: f.id,
+      lat: f.geometry.coordinates[1],
+      lng: f.geometry.coordinates[0],
+      depth: f.geometry.coordinates[2],
+      mag: f.properties.mag,
+      place: f.properties.place,
+      time: f.properties.time,
+      url: f.properties.url,
+    }))
+    .filter(eq => !isNaN(eq.lat) && !isNaN(eq.lng) && eq.mag > 0)
+}
