@@ -363,7 +363,11 @@ const latlng = unproject(pixel.x, pixel.y, 13)
 
 Map Atlas is a full-featured web map built from scratch. The custom map engine handles projection, tile rendering, inertia panning, pinch-to-zoom, marker clustering, and SVG overlays — all without any mapping library.
 
-Built by **[Jojin John](https### 🗺 Custom Map Engine
+Built by **[Jojin John](https://github.com/jojin1709)**
+
+## Features
+
+### 🗺 Custom Map Engine
 
 | Feature | Description |
 |---------|-------------|
@@ -498,19 +502,39 @@ Public endpoints are free but rate-limited. For production, self-host:
 | **Geocoding** | [Nominatim](https://nominatim.org/), [Photon](https://photon.komoot.io/) |
 | **Tiles** | [Planetiler](https://github.com/onthegomap/planetiler), [Tilemaker](https://github.com/systemed/tilemaker) → PMTiles or [TileServer GL](https://github.com/maptiler/tileserver-gl) |
 
+## Languages & Technologies
+
+| Language / Technology | Role & Architecture Usage |
+|-----------------------|---------------------------|
+| **TypeScript** | Main map engine, UI components, interactions, type-safe APIs |
+| **JavaScript** | Browser/runtime compatibility, service worker (`sw.js`), build scripts |
+| **CSS** | Map UI tokens, responsive bottom sheets, HUD controls, dark mode theme |
+| **HTML** | App shell, PWA manifest integration, static embed pages |
+| **Python** | OSM/GIS data processing, spatial validation, dataset generation |
+| **SQL** | Spatial queries/schema & PostGIS database pipelines |
+| **Rust** | High-performance geometry, spatial indexing, WASM modules |
+| **GLSL** | GPU shaders, Three.js 3D globe atmosphere, heatmap rendering, terrain effects |
+| **WebAssembly (WASM)** | Browser execution target for Rust/C++ geospatial algorithms |
+| **Go** | Lightweight map/data services and microservice tooling |
+| **C++** | Native/high-performance GIS vector processing and tile engines |
+
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Language | TypeScript 5.6 |
-| UI | React 18 |
-| Build | Vite 5.4 |
-| Styling | Tailwind CSS 3.4 |
-| State | Zustand 4.5 (demo only) |
-| Map Engine | Custom (zero dependencies) |
-| Geocoding | Nominatim (OpenStreetMap) |
-| Routing | OSRM + Valhalla |
-| Weather | Open-Meteo |
+| Languages | TypeScript, JavaScript, CSS, HTML |
+| UI Framework | React 18 / 19 |
+| 3D Graphics | Three.js (WebGL / GLSL) |
+| Build & Bundler | Vite 5.4 |
+| Cloud & Deployment | Cloudflare Pages / Workers & Vercel |
+| PWA Engine | Service Worker (`sw.js`) + Web App Manifest |
+| Styling | Tailwind CSS 3.4 + Custom CSS Design System |
+| State Management | Zustand 4.5 |
+| Map Engine | Custom dependency-free Web Mercator + 3D Globe |
+| Geocoding | Nominatim + Photon (Typo-tolerant fuzzy search) |
+| Routing & Directions | OSRM + Valhalla (Turn-by-turn navigation) |
+| Offline Storage | CacheStorage (tiles & shell) + localStorage |
+| Weather & Seismic | Open-Meteo + USGS Live Earthquake Feeds |
 | Elevation | OpenTopoData |
 
 ## Contributing
