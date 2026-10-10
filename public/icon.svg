@@ -1,0 +1,38 @@
+<svg viewBox="0 0 512 512" width="512" height="512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background Gradient: Electric Cobalt Blue -->
+    <linearGradient id="cobaltBase" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <!-- Soft Ambient Pin Shadow -->
+    <filter id="pinShadow" x="64" y="64" width="384" height="384" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#0F172A" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+
+  <!-- iOS / Modern Squircle Base -->
+  <rect width="512" height="512" rx="116" fill="url(#cobaltBase)"/>
+  <!-- Subtle inner border highlight -->
+  <rect x="2" y="2" width="508" height="508" rx="114" stroke="rgba(255, 255, 255, 0.16)" stroke-width="4"/>
+
+  <!-- Precision Map Coordinate Grid (Subtle) -->
+  <g stroke="rgba(255, 255, 255, 0.14)" stroke-width="4" stroke-linecap="round">
+    <!-- Horizontal coordinate parallels -->
+    <line x1="80" y1="140" x2="432" y2="140"/>
+    <line x1="80" y1="256" x2="432" y2="256"/>
+    <line x1="80" y1="372" x2="432" y2="372"/>
+    <!-- Vertical coordinate meridians -->
+    <line x1="140" y1="80" x2="140" y2="432"/>
+    <line x1="256" y1="80" x2="256" y2="432"/>
+    <line x1="372" y1="80" x2="372" y2="432"/>
+  </g>
+
+  <!-- Solid Crisp White Navigation Pin -->
+  <g filter="url(#pinShadow)">
+    <path d="M256 100 C182 100 122 160 122 234 C122 334 256 424 256 424 C256 424 390 334 390 234 C390 160 330 100 256 100 Z" fill="#FFFFFF"/>
+    <!-- Concentric Precision Navigation Eye -->
+    <circle cx="256" cy="234" r="54" fill="#2563EB"/>
+    <circle cx="256" cy="234" r="26" fill="#FFFFFF"/>
+  </g>
+</svg>

@@ -1,0 +1,19 @@
+<svg viewBox="0 0 512 512" width="512" height="512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="116" fill="#2563EB"/>
+  <rect x="2" y="2" width="508" height="508" rx="114" stroke="rgba(255, 255, 255, 0.2)" stroke-width="6"/>
+
+  <!-- Precision Map Coordinate Grid -->
+  <g stroke="rgba(255, 255, 255, 0.18)" stroke-width="6" stroke-linecap="round">
+    <line x1="80" y1="140" x2="432" y2="140"/>
+    <line x1="80" y1="256" x2="432" y2="256"/>
+    <line x1="80" y1="372" x2="432" y2="372"/>
+    <line x1="140" y1="80" x2="140" y2="432"/>
+    <line x1="256" y1="80" x2="256" y2="432"/>
+    <line x1="372" y1="80" x2="372" y2="432"/>
+  </g>
+
+  <!-- Crisp Navigation Pin -->
+  <path d="M256 96 C178 96 116 158 116 236 C116 338 256 428 256 428 C256 428 396 338 396 236 C396 158 334 96 256 96 Z" fill="#FFFFFF"/>
+  <circle cx="256" cy="236" r="56" fill="#2563EB"/>
+  <circle cx="256" cy="236" r="26" fill="#FFFFFF"/>
+</svg>
