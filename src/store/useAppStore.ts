@@ -22,6 +22,8 @@ export interface ContextMenuState {
   latlng: LatLng
 }
 
+export type PanelTab = 'search' | 'directions' | 'layers' | 'tools' | 'places' | 'all'
+
 interface AppState {
   // Map style
   style: string
@@ -29,7 +31,10 @@ interface AppState {
 
   // Panel
   panelOpen: boolean
+  activeTab: PanelTab
+  setActiveTab: (t: PanelTab) => void
   togglePanel: () => void
+  openPanel: (tab?: PanelTab) => void
   closePanel: () => void
 
   // Dark mode
@@ -170,8 +175,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   style: 'osm',
   setStyle: s => set({ style: s }),
 
-  panelOpen: true,
+  panelOpen: typeof window !== 'undefined' ? window.innerWidth >= 768 : true,
+  activeTab: 'search',
+  setActiveTab: t => set({ activeTab: t, panelOpen: true }),
   togglePanel: () => set(s => ({ panelOpen: !s.panelOpen })),
+  openPanel: tab => set({ panelOpen: true, ...(tab ? { activeTab: tab } : {}) }),
   closePanel: () => set({ panelOpen: false }),
 
   dark: false,

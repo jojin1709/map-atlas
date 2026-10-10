@@ -1,6 +1,8 @@
 <div align="center">
 
-# 🗺 Map Atlas
+<img src="public/icon-192.png" alt="Map Atlas Logo" width="96" height="96" style="border-radius: 22px; box-shadow: 0 4px 16px rgba(0,0,0,0.2);" />
+
+# Map Atlas
 
 **A modern, open-source web map with a custom dependency-free engine.**
 
@@ -10,6 +12,7 @@ No Leaflet. No Mapbox. No Google Maps. Just TypeScript, React, and pure engineer
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
+[![PWA](https://img.shields.io/badge/PWA-Installable-blue?logo=pwa&logoColor=white)](https://mapapp-lovat.vercel.app)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 [Live Demo](https://mapapp-lovat.vercel.app) · [npm](https://www.npmjs.com/package/map-atlas) · [Report Bug](https://github.com/jojin1709/map-atlas/issues)
@@ -360,54 +363,56 @@ const latlng = unproject(pixel.x, pixel.y, 13)
 
 Map Atlas is a full-featured web map built from scratch. The custom map engine handles projection, tile rendering, inertia panning, pinch-to-zoom, marker clustering, and SVG overlays — all without any mapping library.
 
-Built by **[Jojin John](https://github.com/jojin1709)**
-
-## Features
-
-### 🗺 Custom Map Engine
+Built by **[Jojin John](https### 🗺 Custom Map Engine
 
 | Feature | Description |
 |---------|-------------|
-| Web Mercator projection | Industry-standard EPSG:3857 with retina (2x) tile support |
+| Web Mercator projection | Industry-standard EPSG:3857 with retina (2x) tile support and fallback |
+| 3D Globe Mode | Interactive Three.js 3D earth globe with atmospheric glow, auto-rotation, country labels, and instant 2D/3D toggle |
 | Inertia panning | Smooth physics-based glide after drag release |
-| Pinch-to-zoom | Native touch gesture support |
+| Pinch-to-zoom | Native touch gesture support for phones and tablets |
 | Keyboard controls | Arrow keys to pan, `+`/`-` to zoom |
-| Marker clustering | Groups markers at low zoom levels |
-| SVG overlays | Polylines, polygons, circles, custom markers |
+| Marker clustering | Groups markers dynamically across zoom levels |
+| SVG overlays | High-contrast polyline casings, polygons, circles, and animated markers |
 | Scale bar | Dynamic distance scale |
-| Popups | Coordinate-anchored popup system |
+| Popups | Coordinate-anchored popup system with Wikipedia previews |
 
 ### 🔍 Search & Navigation
 
-- **Place search** — address and place lookup via Nominatim with live autocomplete
-- **Nearby search** — cafés, restaurants, fuel, pharmacies, hospitals, ATMs, schools, banks, bars, hotels, supermarkets
-- **Driving directions** — alternative routes with turn-by-turn steps
-- **Walking & cycling** — multi-modal routing via Valhalla
-- **Multi-stop routes** �� add waypoints between start and destination
-- **Elevation profile** — SVG chart showing terrain along routes
+- **Typo-tolerant geocoding** — Photon fuzzy search fallback instantly resolves misspelled queries (e.g. "thrisuur")
+- **Directions autocomplete** — live search dropdowns for both starting point and destination
+- **GPS Turn-by-Turn navigation** — full-screen mobile HUD with distance countdown, voice announcements (SpeechSynthesis), turn preview, and route overview
+- **Route guidance connector** — dynamic guidance connecting off-route user locations directly to the route start
+- **1-Click GPS start** — set starting location to your exact GPS coordinates with one tap
+- **Multi-stop routes** — add and optimize waypoints for shortest distance
+- **100% Offline GPS maps** — download entire routes and hundreds of tile layers for backcountry or zero-signal navigation
+- **Elevation profile** — interactive SVG chart showing terrain elevation along routes
+- **Nearby search** — cafés, restaurants, fuel, pharmacies, hospitals, ATMs, schools, supermarkets
 - **6 map styles** — Street, Satellite, Dark, Topo, Humanitarian, Cycling
 
 ### 🛠 Tools
 
+- **360° Street View** — interactive street-level panoramic visual inspection directly from the map
+- **Live Earthquakes** — real-time USGS seismic magnitude feed with subtle pulsating markers
 - **Distance & area measurement** — click points, see cumulative distance and polygon area (m²/km²/ft²/acre)
 - **Drawing tools** — lines, polygons, rectangles with **undo/redo** (Ctrl+Z / Ctrl+Y)
-- **Heatmap** — visualise density of places and search results
-- **Turn-by-turn navigation** — maneuver cards with distance countdown during route playback
+- **Heatmap** — smooth density gradient visualization for places and search results
 - **Weather** — current conditions at map centre (Open-Meteo)
-- **Geolocation** — locate me, GPS track recording
+- **Fast geolocation** — instant GPS locate me with sub-200ms IP fallback
 - **Coordinate picker** — click to copy exact coordinates
-- **Right-click menu** — set start/dest, save place, zoom, copy coords
-- **Layer toggles** — show/hide routes, pins, shapes, tracks independently
-- **Dark mode** — full dark UI theme
+- **Right-click / Long-press menu** — set start/dest, street view, save place, zoom, copy coords
+- **Layer toggles** — show/hide routes, pins, shapes, tracks, and earthquakes independently
+- **Dark mode** — sleek neutral dark theme (`#121214`, `#18181b`)
 - **Print** — clean print layout
 
-### 💾 Data
+### 💾 Data & Mobile PWA
 
-- **Saved places** — persisted in browser localStorage
+- **Saved places** — persisted in browser localStorage with custom icons and tags
 - **Import/Export** — GPX, GeoJSON, KML (points, lines, and polygons)
-- **Shareable links** — map view encoded in URL hash
+- **Shareable links** — exact coordinates and zoom level encoded in URL hash
 - **Fullscreen mode** — distraction-free map view
-- **Responsive** — bottom sheet on mobile devices
+- **Responsive mobile drawer** — swipeable bottom sheet optimized for phones
+- **Progressive Web App (PWA)** — installable on Android, iOS Safari, and Desktop Chrome/Edge with offline service worker and custom app iconsesponsive** — bottom sheet on mobile devices
 - **PWA offline** — installable, tiles cached for offline use
 
 ### 📎 Embed Mode

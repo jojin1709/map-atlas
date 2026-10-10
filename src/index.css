@@ -484,40 +484,33 @@ button:disabled {
 
   #panel {
     position: fixed;
-    bottom: 0;
+    bottom: 52px;
     left: 0;
     right: 0;
     width: 100%;
     min-width: unset;
-    height: 60vh;
-    max-height: 80vh;
+    height: 52vh;
+    max-height: 72vh;
     border-left: none;
     border-top: 1px solid #e5e7eb;
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -8px 30px rgba(0,0,0,0.18);
     transform: translateY(0);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 45;
+  }
+  .dark #panel {
+    border-top-color: #27272a;
+    box-shadow: 0 -8px 30px rgba(0,0,0,0.55);
   }
 
   .panel-closed #panel {
-    transform: translateY(100%);
+    transform: translateY(calc(100% + 60px));
     position: fixed;
   }
 
-  /* Drag handle */
-  #panel::before {
-    content: '';
-    display: block;
-    width: 36px;
-    height: 4px;
-    background: #d1d5db;
-    border-radius: 2px;
-    margin: 8px auto 4px;
-    flex-shrink: 0;
-  }
-
   .panel-header {
-    padding: 4px 16px 10px;
+    padding: 6px 16px 10px;
   }
 }
 

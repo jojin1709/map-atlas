@@ -731,29 +731,29 @@ export default function MapView() {
           </div>
         </div>
       ) : (
-        <div className="absolute top-3 right-16 z-10 flex items-center gap-2">
+        <div className="absolute top-3 right-14 sm:right-16 z-10 flex items-center gap-1.5 sm:gap-2">
           <button
             onClick={() => {
               const engine = engineRef.current
               const c = engine ? engine.getCenter() : (userLocation || { lat: 0, lng: 0 })
               useAppStore.getState().setStreetViewCoord(c)
             }}
-            className="px-3.5 py-2 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-xl shadow-md border border-gray-200 dark:border-zinc-800 font-semibold text-xs text-gray-800 dark:text-gray-100 flex items-center gap-2 hover:scale-105 active:scale-95 transition"
+            className="p-2 sm:px-3.5 sm:py-2 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-xl shadow-md border border-gray-200 dark:border-zinc-800 font-semibold text-xs text-gray-800 dark:text-gray-100 flex items-center gap-1.5 hover:scale-105 active:scale-95 transition"
             title="Open 360° Street View at current center"
           >
-            <Camera className="w-3.5 h-3.5 text-sky-500" />
-            <span>Street View</span>
+            <Camera className="w-4 h-4 text-sky-500" />
+            <span className="hidden sm:inline">Street View</span>
           </button>
           <button
             onClick={() => {
               setGlobeMode(true)
               useAppStore.getState().showToast('Switched to 3D Globe view')
             }}
-            className="px-3.5 py-2 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-xl shadow-md border border-gray-200 dark:border-zinc-800 font-semibold text-xs text-gray-800 dark:text-gray-100 flex items-center gap-2 hover:scale-105 active:scale-95 transition"
+            className="p-2 sm:px-3.5 sm:py-2 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-xl shadow-md border border-gray-200 dark:border-zinc-800 font-semibold text-xs text-gray-800 dark:text-gray-100 flex items-center gap-1.5 hover:scale-105 active:scale-95 transition"
             title="Switch to 3D Globe"
           >
-            <GlobeIcon className="w-3.5 h-3.5 text-blue-500" />
-            <span>3D Globe</span>
+            <GlobeIcon className="w-4 h-4 text-blue-500" />
+            <span className="hidden sm:inline">3D Globe</span>
           </button>
         </div>
       )}
