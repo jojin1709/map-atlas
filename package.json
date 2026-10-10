@@ -27,8 +27,8 @@
     "build:lib": "vite build --mode lib && tsc -p tsconfig.lib.json",
     "build:demo": "tsc -b && vite build",
     "preview": "vite preview",
-    "pages:dev": "wrangler pages dev dist",
-    "pages:deploy": "npm run build && wrangler pages deploy dist --project-name=map-atlas",
+    "pages:dev": "wrangler dev",
+    "pages:deploy": "npm run build && wrangler deploy",
     "prepublishOnly": "npm run build:lib"
   },
   "keywords": [
