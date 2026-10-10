@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { DrawTool, DrawnShape, GeocodeResult, LatLng, OSRMRoute, SavedPlace, TrackPoint } from '../types'
 import type { WikipediaPlaceSummary, EarthquakeRecord } from '../services/api'
-import { fetchLiveEarthquakes } from '../services/api'
+import { fetchLiveEarthquakes, fetchRainViewerTimestamp } from '../services/api'
 
 export interface LayerVisibility {
   routes: boolean
@@ -14,6 +14,7 @@ export interface LayerVisibility {
   places: boolean
   earthquakes: boolean
   traffic: boolean
+  radar: boolean
 }
 
 export interface ContextMenuState {
@@ -72,6 +73,10 @@ interface AppState {
   setRoutingProfile: (p: string) => void
   setDirStatus: (s: string) => void
   clearDirections: () => void
+  avoidTolls: boolean
+  setAvoidTolls: (avoid: boolean) => void
+  avoidHighways: boolean
+  setAvoidHighways: (avoid: boolean) => void
 
   // GPS Navigation Mode
   navActive: boolean
@@ -163,6 +168,10 @@ interface AppState {
   // Offline Area Manager Modal
   offlineManagerOpen: boolean
   setOfflineManagerOpen: (open: boolean) => void
+
+  // Weather Radar
+  radarTimestamp: number | null
+  fetchRadarTimestamp: () => Promise<void>
 }
 
 function loadPlaces(): SavedPlace[] {
@@ -228,6 +237,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   setRoutingProfile: p => set({ routingProfile: p }),
   setDirStatus: s => set({ dirStatus: s }),
   clearDirections: () => set({ from: null, to: null, waypoints: [], routes: [], routeIndex: 0, dirStatus: '', navActive: false }),
+  avoidTolls: false,
+  setAvoidTolls: avoid => set({ avoidTolls: avoid }),
+  avoidHighways: false,
+  setAvoidHighways: avoid => set({ avoidHighways: avoid }),
 
   navActive: false,
   setNavActive: active => set({ navActive: active }),
@@ -340,6 +353,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     places: true,
     earthquakes: false,
     traffic: false,
+    radar: false,
   },
   toggleLayer: key => {
     const next = !get().layers[key]
@@ -348,6 +362,23 @@ export const useAppStore = create<AppState>((set, get) => ({
     }))
     if (key === 'earthquakes' && next && !get().earthquakeData.length) {
       get().fetchEarthquakes()
+    }
+    if (key === 'radar' && next && !get().radarTimestamp) {
+      get().fetchRadarTimestamp()
+    }
+  },
+
+  radarTimestamp: null,
+  fetchRadarTimestamp: async () => {
+    try {
+      get().showToast('Fetching latest weather radar…')
+      const ts = await fetchRainViewerTimestamp()
+      if (ts) {
+        set({ radarTimestamp: ts })
+        get().showToast('Live Weather Radar overlay active')
+      }
+    } catch {
+      get().showToast('Weather radar unavailable')
     }
   },
 

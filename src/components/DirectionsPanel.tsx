@@ -31,6 +31,10 @@ export default function DirectionsPanel() {
   const routeIndex = useAppStore(s => s.routeIndex)
   const routingProfile = useAppStore(s => s.routingProfile)
   const dirStatus = useAppStore(s => s.dirStatus)
+  const avoidTolls = useAppStore(s => s.avoidTolls)
+  const setAvoidTolls = useAppStore(s => s.setAvoidTolls)
+  const avoidHighways = useAppStore(s => s.avoidHighways)
+  const setAvoidHighways = useAppStore(s => s.setAvoidHighways)
 
   // Live autocomplete for "From"
   useEffect(() => {
@@ -108,7 +112,10 @@ export default function DirectionsPanel() {
       store.setTo(end)
 
       const points = [start, ...store.waypoints, end]
-      const result = await api.route(store.routingProfile, points)
+      const result = await api.route(store.routingProfile, points, {
+        avoidTolls: store.avoidTolls,
+        avoidHighways: store.avoidHighways,
+      })
       store.setRoutes(result)
       store.setDirStatus(
         `Shortest: ${formatDistance(result[0].distance)}, ${formatDuration(result[0].duration)}`
@@ -328,6 +335,38 @@ export default function DirectionsPanel() {
         <button onClick={swap} className="ghost flex items-center gap-1.5" title="Swap start and destination">
           <ArrowUpDown className="w-3.5 h-3.5" />
           <span>Swap</span>
+        </button>
+      </div>
+
+      {/* Route Avoidance Options */}
+      <div className="flex gap-2 mt-2">
+        <button
+          type="button"
+          onClick={() => {
+            setAvoidTolls(!avoidTolls)
+            if (routes.length > 0) getRoute()
+          }}
+          className={`flex-1 py-1 px-2 text-xs rounded-lg border font-medium transition ${
+            avoidTolls
+              ? 'bg-blue-600 border-blue-600 text-white shadow-xs'
+              : 'bg-gray-100 dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-zinc-700'
+          }`}
+        >
+          {avoidTolls ? '✓ Avoid Tolls' : '+ Avoid Tolls'}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setAvoidHighways(!avoidHighways)
+            if (routes.length > 0) getRoute()
+          }}
+          className={`flex-1 py-1 px-2 text-xs rounded-lg border font-medium transition ${
+            avoidHighways
+              ? 'bg-blue-600 border-blue-600 text-white shadow-xs'
+              : 'bg-gray-100 dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-zinc-700'
+          }`}
+        >
+          {avoidHighways ? '✓ Avoid Highways' : '+ Avoid Highways'}
         </button>
       </div>
 

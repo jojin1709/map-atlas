@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import * as api from '../services/api'
 import { toDecimal } from '../services/geo'
-import { Camera, X, ExternalLink, Copy, Check, Compass, Layers } from 'lucide-react'
+import { Camera, X, ExternalLink, Copy, Check, Compass } from 'lucide-react'
 
 export default function StreetViewModal() {
   const coord = useAppStore(s => s.streetViewCoord)
@@ -33,11 +33,18 @@ export default function StreetViewModal() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [coord, setCoord])
 
+  const [provider, setProvider] = useState<'google' | 'mapillary'>('google')
+
   if (!coord) return null
 
   const googleMapsUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${coord.lat},${coord.lng}`
   const mapillaryUrl = `https://www.mapillary.com/app/?lat=${coord.lat}&lng=${coord.lng}&z=17`
-  const embedUrl = `https://maps.google.com/maps?q=&layer=c&cbll=${coord.lat},${coord.lng}&output=svembed`
+  
+  // Google svembed requires cbp camera angles to initialize 360 panorama mode
+  const googleEmbedUrl = `https://maps.google.com/maps?layer=c&cbll=${coord.lat},${coord.lng}&cbp=12,0,0,0,0&output=svembed`
+  const mapillaryEmbedUrl = `https://www.mapillary.com/embed?lat=${coord.lat}&lng=${coord.lng}&z=17`
+
+  const activeEmbedUrl = provider === 'google' ? googleEmbedUrl : mapillaryEmbedUrl
 
   const copyUrl = async () => {
     try {
@@ -79,6 +86,32 @@ export default function StreetViewModal() {
 
           {/* Action Links & Close */}
           <div className="flex items-center gap-1.5 shrink-0">
+            {/* Provider Switcher */}
+            <div className="flex items-center rounded-lg border border-gray-200 dark:border-zinc-700 p-0.5 bg-gray-100 dark:bg-zinc-800 text-xs">
+              <button
+                type="button"
+                onClick={() => setProvider('google')}
+                className={`px-2 py-1 rounded-md text-[11px] font-semibold transition border-0 ${
+                  provider === 'google'
+                    ? 'bg-white dark:bg-zinc-700 text-blue-600 dark:text-blue-400 shadow-xs'
+                    : 'bg-transparent text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-200'
+                }`}
+              >
+                Google 360°
+              </button>
+              <button
+                type="button"
+                onClick={() => setProvider('mapillary')}
+                className={`px-2 py-1 rounded-md text-[11px] font-semibold transition border-0 ${
+                  provider === 'mapillary'
+                    ? 'bg-white dark:bg-zinc-700 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                    : 'bg-transparent text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-200'
+                }`}
+              >
+                Mapillary
+              </button>
+            </div>
+
             <button
               onClick={copyUrl}
               className="px-2.5 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center gap-1 transition"
@@ -88,24 +121,14 @@ export default function StreetViewModal() {
               <span className="hidden sm:inline">{copied ? 'Copied' : 'Share'}</span>
             </button>
             <a
-              href={mapillaryUrl}
+              href={provider === 'google' ? googleMapsUrl : mapillaryUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-2.5 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center gap-1 transition"
-              title="Open open-source street imagery on Mapillary"
-            >
-              <Layers className="w-3.5 h-3.5 text-emerald-500" />
-              <span className="hidden sm:inline">Mapillary</span>
-            </a>
-            <a
-              href={googleMapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-2.5 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center gap-1 transition"
-              title="Open full interactive Street View in Google Maps"
+              className="px-2.5 py-1.5 text-xs font-medium rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 flex items-center gap-1 transition"
+              title="Open full interactive Street View in app or browser"
             >
               <ExternalLink className="w-3.5 h-3.5 text-blue-500" />
-              <span className="hidden sm:inline">Google View</span>
+              <span className="hidden sm:inline">Open in {provider === 'google' ? 'Google' : 'Mapillary'}</span>
             </a>
             <button
               onClick={() => setCoord(null)}
@@ -117,11 +140,28 @@ export default function StreetViewModal() {
           </div>
         </div>
 
+        {/* Coverage Tip Notice */}
+        <div className="px-4 py-1.5 bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200/60 dark:border-amber-900/40 text-[11px] text-amber-800 dark:text-amber-300 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <span>💡</span>
+            <span>Street View requires vehicle camera coverage. If a location is off-road or in rural fields, tap <strong>"Open in Maps"</strong> to snap to the nearest road.</span>
+          </div>
+          <a
+            href={googleMapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline font-semibold ml-2 shrink-0 hover:text-amber-950 dark:hover:text-amber-100"
+          >
+            Snap to Nearest Road ↗
+          </a>
+        </div>
+
         {/* 360° Street View Panorama Frame */}
         <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden">
           <iframe
+            key={activeEmbedUrl}
             title="Interactive Street View Panorama"
-            src={embedUrl}
+            src={activeEmbedUrl}
             className="w-full h-full border-0"
             allowFullScreen
             loading="lazy"

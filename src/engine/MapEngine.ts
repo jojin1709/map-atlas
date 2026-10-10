@@ -274,7 +274,7 @@ export class MapEngine {
       attribution: attribution || '',
     })
     if (arr[1]) {
-      this.tileLayer2 = new TileLayer(this.tileLayerEl, null, { template: arr[1] })
+      this.tileLayer2 = new TileLayer(this.tileLayerEl, null, { template: arr[1], opacity: 0.65 })
     }
     this._draw()
   }

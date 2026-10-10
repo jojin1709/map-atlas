@@ -17,7 +17,26 @@ import {
   Loader2,
   Bookmark,
   Sparkles,
+  Clock,
+  History,
 } from 'lucide-react'
+
+function loadRecentSearches(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem('mapapp.recentSearches') || '[]')
+  } catch {
+    return []
+  }
+}
+
+function saveRecentSearch(term: string) {
+  if (!term.trim()) return
+  try {
+    const list = loadRecentSearches().filter(s => s.toLowerCase() !== term.toLowerCase())
+    list.unshift(term)
+    localStorage.setItem('mapapp.recentSearches', JSON.stringify(list.slice(0, 6)))
+  } catch {}
+}
 
 const QUICK_CATEGORIES = [
   { id: 'cafe', label: 'Cafés', icon: Coffee, color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60' },
@@ -29,6 +48,7 @@ const QUICK_CATEGORIES = [
 
 export default function SearchPanel() {
   const [query, setQuery] = useState('')
+  const [recentSearches, setRecentSearches] = useState<string[]>(loadRecentSearches)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [nearbyLoading, setNearbyLoading] = useState(false)
@@ -72,6 +92,8 @@ export default function SearchPanel() {
   const runSearch = async () => {
     const q = query.trim()
     if (!q) return
+    saveRecentSearch(q)
+    setRecentSearches(loadRecentSearches())
     setLoading(true)
     setError('')
     setActiveCategory(null)
@@ -91,6 +113,8 @@ export default function SearchPanel() {
   }
 
   const pickSuggestion = (label: string, lat: number, lng: number) => {
+    saveRecentSearch(label)
+    setRecentSearches(loadRecentSearches())
     setQuery(label)
     setShowSuggestions(false)
     setSearchSuggestions([])
@@ -187,6 +211,41 @@ export default function SearchPanel() {
               >
                 <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                 <span className="truncate text-gray-800 dark:text-gray-200">{s.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Recent Searches dropdown */}
+        {showSuggestions && !query.trim() && recentSearches.length > 0 && (
+          <div className="absolute top-full left-0 right-0 z-50 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-2xl shadow-2xl p-2 mt-1">
+            <div className="flex items-center justify-between px-2 py-1 text-[11px] text-gray-400 font-semibold border-b border-gray-100 dark:border-zinc-700/60 mb-1">
+              <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-blue-500" /> Recent Searches</span>
+              <button
+                onClick={() => {
+                  localStorage.removeItem('mapapp.recentSearches')
+                  setRecentSearches([])
+                }}
+                className="hover:text-red-500 transition"
+              >
+                Clear
+              </button>
+            </div>
+            {recentSearches.map((term, i) => (
+              <button
+                key={i}
+                className="w-full text-left px-2.5 py-2 text-xs hover:bg-gray-100 dark:hover:bg-zinc-700/60 rounded-xl flex items-center gap-2.5 transition text-gray-700 dark:text-gray-200"
+                onClick={() => {
+                  setQuery(term)
+                  setShowSuggestions(false)
+                  api.geocode(term).then(items => {
+                    setSearchResults(items)
+                    if (items[0]) flyTo(items[0].lat, items[0].lng, items[0].label)
+                  })
+                }}
+              >
+                <History className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                <span className="truncate">{term}</span>
               </button>
             ))}
           </div>

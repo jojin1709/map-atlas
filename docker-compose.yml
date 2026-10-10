@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+
+  tile-proxy:
+    build:
+      context: .
+      target: go-builder
+    ports:
+      - "8080:8080"
+    restart: unless-stopped

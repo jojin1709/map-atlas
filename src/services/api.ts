@@ -120,34 +120,60 @@ export async function reverse(lat: number, lng: number): Promise<string> {
   return r.display_name || 'Unknown address'
 }
 
-/* ---- Overpass ---- */
+/* ---- Nearby POI Search (CORS-safe Photon & Nominatim) ---- */
 
 export async function nearby(lat: number, lng: number, amenity: string, radius: number): Promise<NearbyResult[]> {
-  const query =
-    `[out:json][timeout:25];` +
-    `nwr["amenity"="${amenity}"](around:${radius},${lat},${lng});` +
-    `out center 40;`
-  const j = await json<{ elements: Array<{ lat?: number; lon?: number; center?: { lat: number; lon: number }; tags?: Record<string, string> }> }>(
-    CONFIG.overpassUrl,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `data=${encodeURIComponent(query)}`,
+  const amenityLabel = CONFIG.nearby[amenity] || amenity
+
+  // 1. Primary: Photon OSM POI search (100% CORS-safe, sub-second responses)
+  try {
+    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(amenity)}&lat=${lat}&lon=${lng}&limit=40`
+    const res = await fetch(url)
+    if (res.ok) {
+      const data = await res.json()
+      if (Array.isArray(data.features) && data.features.length > 0) {
+        return data.features.map((f: { geometry: { coordinates: [number, number] }; properties: Record<string, string> }) => ({
+          lat: f.geometry.coordinates[1],
+          lng: f.geometry.coordinates[0],
+          label: f.properties.name || f.properties.street || amenityLabel,
+          tags: f.properties,
+        }))
+      }
     }
-  )
-  return j.elements
-    .map(el => ({
-      lat: el.lat ?? el.center?.lat ?? 0,
-      lng: el.lon ?? el.center?.lon ?? 0,
-      label: el.tags?.name || CONFIG.nearby[amenity] || amenity,
-      tags: el.tags,
-    }))
-    .filter(p => p.lat !== 0 || p.lng !== 0)
+  } catch {
+    // fallback to nominatim
+  }
+
+  // 2. Secondary fallback: Nominatim bounded search (CORS-safe)
+  try {
+    const degOffset = Math.max(0.02, radius / 111000)
+    const viewbox = `${lng - degOffset},${lat + degOffset},${lng + degOffset},${lat - degOffset}`
+    const nomUrl = `${CONFIG.nominatimUrl}/search?q=${encodeURIComponent(amenity)}&format=json&bounded=1&viewbox=${viewbox}&limit=25`
+    const nomRes = await fetch(nomUrl, { headers: { 'Accept': 'application/json' } })
+    if (nomRes.ok) {
+      const list = await nomRes.json()
+      if (Array.isArray(list)) {
+        return list.map((item: { lat: string; lon: string; display_name: string }) => ({
+          lat: parseFloat(item.lat),
+          lng: parseFloat(item.lon),
+          label: item.display_name.split(',')[0] || amenityLabel,
+        }))
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  return []
 }
 
 /* ---- Routing (OSRM for driving, Valhalla for walking/cycling) ---- */
 
-export async function route(profileKey: string, points: { lat: number; lng: number }[]): Promise<OSRMRoute[]> {
+export async function route(
+  profileKey: string,
+  points: { lat: number; lng: number }[],
+  options?: { avoidTolls?: boolean; avoidHighways?: boolean }
+): Promise<OSRMRoute[]> {
   const profile = CONFIG.profiles[profileKey]
   if (!profile) throw new Error(`Unknown profile: ${profileKey}`)
 
@@ -157,9 +183,14 @@ export async function route(profileKey: string, points: { lat: number; lng: numb
   }
 
   const coords = points.map(p => `${p.lng},${p.lat}`).join(';')
+  const excludes: string[] = []
+  if (options?.avoidTolls) excludes.push('toll')
+  if (options?.avoidHighways) excludes.push('motorway')
+  const excludeQuery = excludes.length > 0 ? `&exclude=${excludes.join(',')}` : ''
+
   const url =
     `${CONFIG.routingBaseUrl}/route/v1/${profile.osrm}/${coords}` +
-    `?overview=full&geometries=geojson&steps=true&alternatives=true`
+    `?overview=full&geometries=geojson&steps=true&alternatives=true${excludeQuery}`
   const j = await json<{ code: string; message?: string; routes?: OSRMRoute[] }>(url)
   if (j.code !== 'Ok' || !j.routes?.length) throw new Error(j.message || 'No route found')
   return j.routes

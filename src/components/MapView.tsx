@@ -8,7 +8,7 @@ import { useAppStore } from '../store/useAppStore'
 import * as api from '../services/api'
 import { haversine, formatDistance, polygonArea, formatArea, coordsDMS, toDecimal } from '../services/geo'
 import type { LatLng, LayerHandleLike } from '../types'
-import { Map as MapIcon, Globe as GlobeIcon, RotateCw, Tag, Camera, Compass, Car, CloudDownload } from 'lucide-react'
+import { Map as MapIcon, Globe as GlobeIcon, RotateCw, Tag, Camera, Compass, Car, CloudDownload, CloudRain, BookOpen } from 'lucide-react'
 
 type LayerList = LayerHandleLike[]
 
@@ -93,6 +93,7 @@ export default function MapView() {
   const toggleCompass = useAppStore(s => s.toggleCompass)
   const toggleLayer = useAppStore(s => s.toggleLayer)
   const setOfflineManagerOpen = useAppStore(s => s.setOfflineManagerOpen)
+  const radarTimestamp = useAppStore(s => s.radarTimestamp)
 
   /* ---- create engine ---- */
   useEffect(() => {
@@ -194,13 +195,20 @@ export default function MapView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  /* ---- style change ---- */
+  /* ---- style & weather radar overlay change ---- */
   useEffect(() => {
     const engine = engineRef.current
     if (!engine) return
     const s = CONFIG.styles[style]
-    if (s) engine.setTiles(s.tiles, s.attribution, s.cssFilter)
-  }, [style])
+    if (!s) return
+
+    let tiles = [...s.tiles]
+    if (layers.radar && radarTimestamp) {
+      const radarUrl = `https://tilecache.rainviewer.com/v2/radar/${radarTimestamp}/256/{z}/{x}/{y}/2/1_1.png`
+      tiles = [s.tiles[0], radarUrl]
+    }
+    engine.setTiles(tiles, s.attribution, s.cssFilter)
+  }, [style, layers.radar, radarTimestamp])
 
   /* ---- open popup ---- */
   const openPointPopup = useCallback((p: LatLng, title?: string) => {
@@ -932,6 +940,38 @@ export default function MapView() {
           >
             <GlobeIcon className="w-4 h-4 text-blue-500" />
             <span className="hidden xl:inline">3D Globe</span>
+          </button>
+
+          {/* Radar Overlay */}
+          <button
+            onClick={() => {
+              toggleLayer('radar')
+              useAppStore.getState().showToast(!layers.radar ? 'Live weather radar overlay enabled' : 'Weather radar hidden')
+            }}
+            className={`p-2 sm:px-2.5 sm:py-1.5 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition ${
+              layers.radar
+                ? 'bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 font-bold'
+                : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
+            }`}
+            title={layers.radar ? 'Hide Weather Radar' : 'Show Live Weather Radar'}
+          >
+            <CloudRain className="w-4 h-4 text-sky-500" />
+            <span className="hidden xl:inline">Radar</span>
+          </button>
+
+          <div className="w-px h-5 bg-gray-200 dark:bg-zinc-800 mx-0.5" />
+
+          {/* Docs Link */}
+          <button
+            onClick={() => {
+              window.history.pushState(null, '', '/docs')
+              window.dispatchEvent(new PopStateEvent('popstate'))
+            }}
+            className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl font-semibold text-xs text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center gap-1.5 transition"
+            title="Open API Reference & Docs"
+          >
+            <BookOpen className="w-4 h-4 text-purple-500" />
+            <span className="hidden xl:inline">Docs</span>
           </button>
         </div>
       )}

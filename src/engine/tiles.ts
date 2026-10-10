@@ -6,12 +6,14 @@ export interface TileLayerConfig {
   template: string
   attribution?: string
   retina?: boolean
+  opacity?: number
 }
 
 export class TileLayer {
   private container: HTMLElement
   private imgs = new Map<string, HTMLImageElement>()
   private template: string
+  private opacity: number | undefined
 
   constructor(
     container: HTMLElement,
@@ -20,6 +22,7 @@ export class TileLayer {
   ) {
     this.container = container
     this.template = config.template
+    this.opacity = config.opacity
     if (config.attribution && attributionEl) {
       attributionEl.innerHTML = config.attribution
     }
@@ -59,6 +62,9 @@ export class TileLayer {
           img.draggable = false
           img.width = tileSize
           img.height = tileSize
+          if (this.opacity !== undefined) {
+            img.style.opacity = String(this.opacity)
+          }
 
           let url = this.template
             .replace('{z}', String(zoom))

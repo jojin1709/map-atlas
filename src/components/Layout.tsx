@@ -27,6 +27,7 @@ import {
   Bookmark,
   ChevronDown,
   Crosshair,
+  BookOpen,
 } from 'lucide-react'
 
 function isEmbedMode(): boolean {
@@ -199,6 +200,19 @@ export default function Layout() {
 
           {/* Header Action Buttons */}
           <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                window.history.pushState(null, '', '/docs')
+                window.dispatchEvent(new PopStateEvent('popstate'))
+              }}
+              className="p-1.5 text-gray-500 hover:text-blue-600 dark:text-zinc-400 dark:hover:text-blue-400 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-800 transition flex items-center gap-1 text-xs font-semibold"
+              title="View Documentation & Embed Guides"
+            >
+              <BookOpen className="w-4 h-4" />
+              <span className="hidden sm:inline">Docs</span>
+            </button>
+
             {/* Desktop close button */}
             <button
               type="button"
