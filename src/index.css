@@ -493,14 +493,7 @@ button:disabled {
 /* ---- mobile ---- */
 @media (max-width: 768px) {
   .app-layout {
-    flex-direction: column-reverse;
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-  }
-
-  .app-layout > * {
-    pointer-events: auto;
+    display: contents;
   }
 
   .hamburger {
@@ -536,7 +529,7 @@ button:disabled {
     border-radius: 24px 24px 0 0;
     box-shadow: 0 -10px 35px rgba(0,0,0,0.22);
     transform: translateY(0);
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s;
     z-index: 45;
   }
   .dark #panel {
@@ -547,6 +540,8 @@ button:disabled {
   .panel-closed #panel {
     transform: translateY(calc(100% + 75px));
     position: fixed;
+    pointer-events: none !important;
+    visibility: hidden !important;
   }
 
   .panel-header {

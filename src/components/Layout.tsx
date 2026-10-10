@@ -131,38 +131,51 @@ export default function Layout() {
         </button>
       )}
 
-      {/* Mobile Top Floating Search Bar (Google Maps style) */}
-      {!panelOpen && (
-        <div className="sm:hidden fixed top-3 inset-x-3 z-30 flex items-center gap-2">
-          <button
-            onClick={() => {
-              setActiveTab('search')
-              useAppStore.getState().openPanel('search')
-            }}
-            className="flex-1 flex items-center gap-2 px-3.5 py-2.5 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/80 dark:border-zinc-800/80 text-gray-500 dark:text-zinc-400 text-xs font-medium text-left active:scale-98 transition"
-            title="Search locations"
-          >
-            <Search className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-            <span className="truncate">Search city, address, or landmark…</span>
-          </button>
+      {/* Mobile Top Floating Search Bar (Google Maps style - Persistent, never moves or hides) */}
+      <div className="sm:hidden fixed top-3 inset-x-3 z-30 flex items-center gap-2 pointer-events-auto">
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('search')
+            useAppStore.getState().openPanel('search')
+          }}
+          className="flex-1 flex items-center gap-2 px-3.5 py-2.5 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/80 dark:border-zinc-800/80 text-gray-500 dark:text-zinc-400 text-xs font-medium text-left active:scale-98 transition cursor-pointer touch-manipulation"
+          title="Search locations"
+        >
+          <Search className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+          <span className="truncate">Search city, address, or landmark…</span>
+        </button>
 
-          {/* Quick Docs Link */}
+        {/* Install App button inside search bar if installable */}
+        {deferredPrompt && !isInstalled && (
           <button
-            onClick={() => {
-              window.history.pushState(null, '', '/docs')
-              window.dispatchEvent(new PopStateEvent('popstate'))
-            }}
-            className="p-2.5 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/80 dark:border-zinc-800/80 text-purple-600 dark:text-purple-400 shrink-0 active:scale-95 transition"
-            title="API Docs"
+            type="button"
+            onClick={handleInstallClick}
+            className="p-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-md border border-blue-600 shrink-0 active:scale-95 transition cursor-pointer touch-manipulation"
+            title="Install Map Atlas"
           >
-            <BookOpen className="w-4 h-4" />
+            <Smartphone className="w-4 h-4" />
           </button>
-        </div>
-      )}
+        )}
+
+        {/* Quick Docs Link */}
+        <button
+          type="button"
+          onClick={() => {
+            window.history.pushState(null, '', '/docs')
+            window.dispatchEvent(new PopStateEvent('popstate'))
+          }}
+          className="p-2.5 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/80 dark:border-zinc-800/80 text-purple-600 dark:text-purple-400 shrink-0 active:scale-95 transition cursor-pointer touch-manipulation"
+          title="API Docs"
+        >
+          <BookOpen className="w-4 h-4" />
+        </button>
+      </div>
 
       {/* Floating Locate Me button on mobile when sheet is closed */}
       {!panelOpen && (
         <button
+          type="button"
           onClick={async () => {
             try {
               const loc = await api.locateUser()
@@ -173,24 +186,11 @@ export default function Layout() {
               useAppStore.getState().showToast('Could not fetch location')
             }
           }}
-          className="fixed bottom-18 right-3.5 z-30 p-3 bg-white/95 dark:bg-zinc-900/95 text-blue-600 dark:text-blue-400 rounded-2xl shadow-xl border border-gray-200 dark:border-zinc-800 sm:hidden active:scale-90 transition backdrop-blur-md"
+          className="fixed bottom-[74px] right-3.5 z-30 p-3 bg-white/95 dark:bg-zinc-900/95 text-blue-600 dark:text-blue-400 rounded-2xl shadow-xl border border-gray-200 dark:border-zinc-800 sm:hidden active:scale-90 transition backdrop-blur-md cursor-pointer touch-manipulation pointer-events-auto"
           title="Locate me"
         >
           <Crosshair className="w-5 h-5" />
         </button>
-      )}
-
-      {/* Floating mobile PWA install button if installable and panel closed */}
-      {deferredPrompt && !isInstalled && !panelOpen && (
-        <div className="fixed top-3 left-3 z-30 sm:hidden">
-          <button
-            onClick={handleInstallClick}
-            className="px-3 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-full text-xs font-bold shadow-lg flex items-center gap-1.5 transition animate-pulse"
-          >
-            <Smartphone className="w-3.5 h-3.5" />
-            <span>Install App</span>
-          </button>
-        </div>
       )}
 
       {/* Side Panel / Mobile Bottom Sheet */}
@@ -307,35 +307,38 @@ export default function Layout() {
         <Toast />
       </aside>
 
-      {/* Mobile Bottom Navigation Bar (Persistent & Native Feeling) */}
-      <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-gray-200 dark:border-zinc-800 flex items-center justify-around h-[60px] pb-1 px-1 shadow-2xl sm:hidden select-none">
+      {/* Mobile Bottom Navigation Bar (Persistent & Native Feeling - z-50 always on top) */}
+      <nav className="fixed bottom-0 inset-x-0 z-50 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-gray-200 dark:border-zinc-800 flex items-center justify-around h-[60px] pb-1 px-1 shadow-2xl sm:hidden select-none pointer-events-auto touch-manipulation">
         {TABS.map(tab => {
           const Icon = tab.icon
           const isActive = panelOpen && activeTab === tab.id
           return (
             <button
               key={tab.id}
-              onClick={() => {
+              type="button"
+              onClick={e => {
+                e.stopPropagation()
                 if (panelOpen && activeTab === tab.id) {
                   closePanel()
                 } else {
                   setActiveTab(tab.id)
+                  useAppStore.getState().openPanel(tab.id)
                 }
               }}
-              className={`flex flex-col items-center justify-center flex-1 h-full py-0.5 rounded-xl transition border-0 bg-transparent cursor-pointer ${
+              className={`flex flex-col items-center justify-center flex-1 h-full py-0.5 rounded-xl transition border-0 bg-transparent cursor-pointer pointer-events-auto touch-manipulation active:scale-95 ${
                 isActive
                   ? 'text-blue-600 dark:text-blue-400 font-bold'
                   : 'text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200'
               }`}
             >
               <div
-                className={`p-1 rounded-lg transition-transform ${
+                className={`p-1 rounded-lg transition-transform pointer-events-none ${
                   isActive ? 'bg-blue-50 dark:bg-blue-950/60 scale-105' : ''
                 }`}
               >
-                <Icon className="w-5 h-5" />
+                <Icon className="w-5 h-5 pointer-events-none" />
               </div>
-              <span className={`text-[10px] tracking-tight leading-none mt-0.5 block ${isActive ? 'font-bold' : 'font-medium'}`}>
+              <span className={`text-[10px] tracking-tight leading-none mt-0.5 block pointer-events-none ${isActive ? 'font-bold' : 'font-medium'}`}>
                 {tab.shortLabel}
               </span>
             </button>
