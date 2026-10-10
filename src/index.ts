@@ -3,6 +3,8 @@
 // Engine
 export { MapEngine } from './engine/MapEngine'
 export type { MapEngineOptions, PolylineStyle, CircleStyle, MarkerStyle, LayerHandle } from './engine/MapEngine'
+export { GlobeEngine } from './engine/GlobeEngine'
+export type { GlobeEngineOptions, GlobeMarker } from './engine/GlobeEngine'
 export { project, unproject } from './engine/projection'
 export { HeatmapOverlay } from './engine/heatmap'
 export type { HeatPoint, HeatmapOptions } from './engine/heatmap'

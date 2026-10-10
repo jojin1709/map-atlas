@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback } from 'react'
 import { MapEngine } from '../engine/MapEngine'
+import { GlobeEngine } from '../engine/GlobeEngine'
 import { CONFIG } from '../config'
 import { useAppStore } from '../store/useAppStore'
 import * as api from '../services/api'
@@ -62,9 +63,13 @@ function parseUrlParams(): {
 export default function MapView() {
   const containerRef = useRef<HTMLDivElement>(null)
   const engineRef = useRef<MapEngine | null>(null)
+  const globeContainerRef = useRef<HTMLDivElement>(null)
+  const globeEngineRef = useRef<GlobeEngine | null>(null)
   const drawPtsRef = useRef<LatLng[]>([])
 
   const style = useAppStore(s => s.style)
+  const globeMode = useAppStore(s => s.globeMode)
+  const setGlobeMode = useAppStore(s => s.setGlobeMode)
   const measureMode = useAppStore(s => s.measureMode)
   const measurePts = useAppStore(s => s.measurePts)
   const from = useAppStore(s => s.from)
@@ -164,6 +169,15 @@ export default function MapView() {
       store.setCoordPickerMode(false)
     })
 
+    // Zoom out at min-zoom switches to 3D Globe
+    engine.on('zoomlimit-min', () => {
+      const store = useAppStore.getState()
+      if (!store.globeMode) {
+        store.setGlobeMode(true)
+        store.showToast('Zoomed out to 3D Globe view')
+      }
+    })
+
     return () => {
       engine.destroy()
       engineRef.current = null
@@ -248,6 +262,69 @@ export default function MapView() {
   useEffect(() => {
     window.__mapOpenPopup = openPointPopup
   }, [openPointPopup])
+
+  /* ---- globe mode lifecycle & sync ---- */
+  useEffect(() => {
+    if (!globeMode) return
+    if (!globeContainerRef.current) return
+
+    const activeStyle = CONFIG.styles[style] || CONFIG.styles[CONFIG.defaultStyle]
+    const currentCenter = engineRef.current ? engineRef.current.getCenter() : { lat: 20, lng: 0 }
+
+    if (!globeEngineRef.current) {
+      const globe = new GlobeEngine(globeContainerRef.current, {
+        center: [currentCenter.lat, currentCenter.lng],
+        tileUrls: activeStyle.tiles,
+        cssFilter: activeStyle.cssFilter,
+        onZoomInToFlat: target => {
+          setGlobeMode(false)
+          if (engineRef.current) {
+            engineRef.current.setView(target.lat, target.lng, 3)
+          }
+        },
+        onClick: latlng => {
+          setGlobeMode(false)
+          if (engineRef.current) {
+            engineRef.current.setView(latlng.lat, latlng.lng, 4)
+            setTimeout(() => openPointPopup(latlng), 250)
+          }
+        },
+        onMove: latlng => {
+          const el = document.getElementById('coords-display')
+          if (el) el.textContent = `${toDecimal(latlng.lat, latlng.lng)}  ·  ${coordsDMS(latlng.lat, latlng.lng)}`
+        },
+      })
+      globeEngineRef.current = globe
+    } else {
+      globeEngineRef.current.setCenter(currentCenter.lat, currentCenter.lng)
+    }
+  }, [globeMode, style, openPointPopup, setGlobeMode])
+
+  // Sync style changes to globe
+  useEffect(() => {
+    if (!globeEngineRef.current) return
+    const s = CONFIG.styles[style]
+    if (s) globeEngineRef.current.setStyle(style, s.tiles, s.cssFilter)
+  }, [style])
+
+  // Sync markers (user location, search results, places) to globe
+  useEffect(() => {
+    if (!globeEngineRef.current) return
+    const gMarkers = [
+      ...(userLocation ? [{ id: 'user', lat: userLocation.lat, lng: userLocation.lng, label: 'Your location', color: '#3b82f6' }] : []),
+      ...searchResults.map((r, i) => ({ id: `sr-${i}`, lat: r.lat, lng: r.lng, label: r.label.split(',')[0], color: '#ef4444' })),
+      ...places.map(p => ({ id: `p-${p.id}`, lat: p.lat, lng: p.lng, label: p.name, color: '#f59e0b' })),
+    ]
+    globeEngineRef.current.setMarkers(gMarkers)
+  }, [searchResults, userLocation, places, globeMode])
+
+  // Clean up globe on unmount
+  useEffect(() => {
+    return () => {
+      globeEngineRef.current?.destroy()
+      globeEngineRef.current = null
+    }
+  }, [])
 
   /* ---- draw routes ---- */
   useEffect(() => {
@@ -457,9 +534,79 @@ export default function MapView() {
   })()
 
   return (
-    <div className="relative flex-1 h-full">
-      <div ref={containerRef} className="w-full h-full" />
-      {measureMode && measureInfo && (
+    <div className="relative flex-1 h-full overflow-hidden bg-gray-900">
+      {/* 2D Flat Map View */}
+      <div
+        ref={containerRef}
+        className={`w-full h-full transition-opacity duration-300 ${globeMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+      />
+
+      {/* 3D Round Globe View */}
+      <div
+        ref={globeContainerRef}
+        className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${globeMode ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'}`}
+      />
+
+      {/* Globe Controls & View Switcher */}
+      {globeMode ? (
+        <div className="absolute top-3 right-3 z-20 flex flex-col items-end gap-2">
+          <button
+            onClick={() => {
+              const c = globeEngineRef.current?.getCenter()
+              setGlobeMode(false)
+              if (c && engineRef.current) engineRef.current.setView(c.lat, c.lng, 3)
+            }}
+            className="px-3.5 py-2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 font-semibold text-xs text-gray-800 dark:text-gray-100 flex items-center gap-2 hover:scale-105 active:scale-95 transition"
+            title="Switch back to 2D Map"
+          >
+            <span>🗺️</span>
+            <span>Switch to 2D Map</span>
+          </button>
+
+          <div className="flex flex-col gap-1 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-1">
+            <button
+              onClick={() => globeEngineRef.current?.zoomIn()}
+              className="w-9 h-9 flex items-center justify-center font-bold text-base text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
+              title="Zoom in (fly to map)"
+            >
+              +
+            </button>
+            <button
+              onClick={() => globeEngineRef.current?.zoomOut()}
+              className="w-9 h-9 flex items-center justify-center font-bold text-base text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
+              title="Zoom out"
+            >
+              −
+            </button>
+            <button
+              onClick={() => {
+                const rotating = globeEngineRef.current?.toggleAutoRotate()
+                useAppStore.getState().showToast(rotating ? 'Auto-rotation resumed' : 'Auto-rotation paused')
+              }}
+              className="w-9 h-9 flex items-center justify-center text-sm hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
+              title="Toggle earth rotation"
+            >
+              🔄
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="absolute top-3 right-16 z-10">
+          <button
+            onClick={() => {
+              setGlobeMode(true)
+              useAppStore.getState().showToast('Switched to 3D Globe view')
+            }}
+            className="px-3.5 py-2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md rounded-xl shadow-md border border-gray-200 dark:border-gray-700 font-semibold text-xs text-gray-800 dark:text-gray-100 flex items-center gap-1.5 hover:scale-105 active:scale-95 hover:bg-white dark:hover:bg-gray-800 transition"
+            title="Switch to 3D Globe"
+          >
+            <span>🌐</span>
+            <span>3D Globe</span>
+          </button>
+        </div>
+      )}
+
+      {measureMode && measureInfo && !globeMode && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white dark:bg-gray-800 rounded-lg shadow-lg px-4 py-2 text-sm font-medium border border-gray-200 dark:border-gray-700 z-10">
           {measureInfo}
         </div>

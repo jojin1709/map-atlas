@@ -35,6 +35,11 @@ interface AppState {
   dark: boolean
   toggleDark: () => void
 
+  // 3D Globe mode
+  globeMode: boolean
+  setGlobeMode: (on: boolean) => void
+  toggleGlobeMode: () => void
+
   // Search
   searchResults: GeocodeResult[]
   setSearchResults: (r: GeocodeResult[]) => void
@@ -154,6 +159,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ dark: d })
     document.documentElement.classList.toggle('dark', d)
   },
+
+  globeMode: false,
+  setGlobeMode: on => set({ globeMode: on }),
+  toggleGlobeMode: () => set(s => ({ globeMode: !s.globeMode })),
 
   searchResults: [],
   setSearchResults: r => set({ searchResults: r }),

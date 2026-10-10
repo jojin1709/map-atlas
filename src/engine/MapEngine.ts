@@ -480,6 +480,10 @@ export class MapEngine {
   }
 
   zoomOut(): void {
+    if (this.zoom <= this.minZoom) {
+      this.fire('zoomlimit-min', { center: this.getCenter() })
+      return
+    }
     this._zoomAt(this.zoom - 1, this._size().w / 2, this._size().h / 2)
   }
 
@@ -491,6 +495,9 @@ export class MapEngine {
   }
 
   private _zoomAt(z: number, px: number, py: number): void {
+    if (z < this.minZoom) {
+      this.fire('zoomlimit-min', { center: this.getCenter() })
+    }
     z = clampZoom(z, this.minZoom, this.maxZoom)
     if (z === this.zoom) return
     this._stopAnim()
@@ -831,6 +838,10 @@ export class MapEngine {
         if (Math.abs(this.wheelAcc) < 50) return
         const dir = this.wheelAcc < 0 ? 1 : -1
         this.wheelAcc = 0
+        if (dir < 0 && this.zoom <= this.minZoom) {
+          this.fire('zoomlimit-min', { center: this.getCenter() })
+          return
+        }
         const r = root.getBoundingClientRect()
         this._zoomAt(this.zoom + dir, e.clientX - r.left, e.clientY - r.top)
       },
