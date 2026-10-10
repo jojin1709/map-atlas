@@ -1,7 +1,7 @@
 /* Service Worker for Map Atlas PWA — caches tiles and app shell. */
 
-const CACHE_NAME = 'map-atlas-v1'
-const TILE_CACHE = 'map-atlas-tiles-v1'
+const CACHE_NAME = 'map-atlas-v2'
+const TILE_CACHE = 'map-atlas-tiles-v2'
 
 // App shell files to cache
 const APP_SHELL = [
