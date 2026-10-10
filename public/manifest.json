@@ -1,18 +1,42 @@
 {
-  "name": "Map Atlas",
-  "short_name": "MapAtlas",
-  "description": "Custom dependency-free slippy map engine with routing, geocoding, and more.",
+  "id": "/",
+  "name": "Map Atlas — GPS & Offline Maps",
+  "short_name": "Map Atlas",
+  "description": "Fast GPS navigation, turn-by-turn voice directions, and offline maps.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#e8e4dd",
-  "theme_color": "#3b82f6",
   "orientation": "any",
+  "background_color": "#121214",
+  "theme_color": "#2563eb",
+  "categories": ["navigation", "travel", "maps"],
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺</text></svg>",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Directions & Navigation",
+      "short_name": "Directions",
+      "description": "Start turn-by-turn GPS navigation",
+      "url": "/#nav",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

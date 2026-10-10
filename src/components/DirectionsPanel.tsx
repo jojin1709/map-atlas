@@ -6,7 +6,7 @@ import { formatDistance, formatDuration, parseLatLng } from '../services/geo'
 import { downloadRouteForOffline, getSavedOfflineRoute } from '../services/offline'
 import ElevationChart from './ElevationChart'
 import type { LatLng, GeocodeResult } from '../types'
-import { Navigation, ArrowUpDown, TrendingUp, Sparkles, MapPin, Compass, Download, Check, Loader2 } from 'lucide-react'
+import { Navigation, ArrowUpDown, TrendingUp, Sparkles, MapPin, Compass, Download, Check, Loader2, Crosshair } from 'lucide-react'
 
 export default function DirectionsPanel() {
   const [fromText, setFromText] = useState('')
@@ -194,7 +194,7 @@ export default function DirectionsPanel() {
     <section>
       <h2>Directions</h2>
 
-      {/* From Input with Autocomplete */}
+      {/* From Input with Autocomplete & My Location button */}
       <div ref={fromContainerRef} className="relative">
         <input
           value={from ? `${from.lat.toFixed(5)}, ${from.lng.toFixed(5)}` : fromText}
@@ -205,8 +205,31 @@ export default function DirectionsPanel() {
           onFocus={() => {
             if (fromSuggestions.length > 0) setShowFromSug(true)
           }}
-          placeholder="From: address, lat,lng, or click map"
+          placeholder="From: address, lat,lng, or my location"
+          className="pr-8"
         />
+        <button
+          type="button"
+          onClick={async () => {
+            let loc = useAppStore.getState().userLocation
+            if (!loc) {
+              try {
+                loc = await api.locateUser()
+                useAppStore.getState().setUserLocation(loc)
+              } catch {
+                useAppStore.getState().showToast('Could not fetch GPS location')
+                return
+              }
+            }
+            useAppStore.getState().setFrom(loc)
+            setFromText('My Current Location')
+            useAppStore.getState().showToast('Start point set to your location')
+          }}
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-blue-500 rounded transition"
+          title="Use my current GPS location as starting point"
+        >
+          <Crosshair className="w-3.5 h-3.5" />
+        </button>
         {showFromSug && fromSuggestions.length > 0 && (
           <div className="absolute top-full left-0 right-0 z-50 bg-white dark:bg-zinc-850 border border-gray-200 dark:border-zinc-700 rounded-b-lg shadow-xl max-h-48 overflow-y-auto mt-0.5">
             {fromSuggestions.map((s, i) => (

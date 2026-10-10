@@ -78,6 +78,7 @@ export default function MapView() {
   const waypoints = useAppStore(s => s.waypoints)
   const routes = useAppStore(s => s.routes)
   const routeIndex = useAppStore(s => s.routeIndex)
+  const navActive = useAppStore(s => s.navActive)
   const drawnShapes = useAppStore(s => s.drawnShapes)
   const userLocation = useAppStore(s => s.userLocation)
   const searchResults = useAppStore(s => s.searchResults)
@@ -415,21 +416,63 @@ export default function MapView() {
   useEffect(() => {
     const engine = engineRef.current
     if (!engine) return
-    if (!layers.routes) { replaceLayers(engine, '__routeLayers', []); return }
+    if (!layers.routes || !routes.length) { replaceLayers(engine, '__routeLayers', []); return }
     const lls: LayerHandleLike[] = []
+
+    // 1. Draw unselected alternative routes FIRST so they stay in background
     routes.forEach((r, i) => {
+      if (i === routeIndex) return
       const coords = r.geometry.coordinates.map(c => ({ lat: c[1], lng: c[0] }))
-      const sel = i === routeIndex
       lls.push(
         engine.addPolyline(coords, {
-          color: sel ? '#3b82f6' : '#9ca3af',
-          weight: sel ? 6 : 4,
-          opacity: 0.9,
+          color: '#94a3b8',
+          weight: 4.5,
+          opacity: 0.65,
         })
       )
     })
+
+    // 2. Draw active selected route with high-contrast casing + vibrant core line
+    const activeRoute = routes[routeIndex] || routes[0]
+    if (activeRoute) {
+      const coords = activeRoute.geometry.coordinates.map(c => ({ lat: c[1], lng: c[0] }))
+      
+      // Outer casing / outline for maximum contrast against all map styles
+      lls.push(
+        engine.addPolyline(coords, {
+          color: '#1d4ed8',
+          weight: 8,
+          opacity: 0.85,
+        })
+      )
+      // Inner vibrant polyline
+      lls.push(
+        engine.addPolyline(coords, {
+          color: '#3b82f6',
+          weight: 5,
+          opacity: 1,
+        })
+      )
+
+      // 3. In navigation mode, if user is not right at the route start, connect with dashed line
+      if (navActive && userLocation && coords.length > 0) {
+        const startPt = coords[0]
+        const dist = haversine(userLocation, startPt)
+        if (dist > 30) {
+          lls.push(
+            engine.addPolyline([userLocation, startPt], {
+              color: '#2563eb',
+              weight: 3.5,
+              dash: '6 6',
+              opacity: 0.9,
+            })
+          )
+        }
+      }
+    }
+
     replaceLayers(engine, '__routeLayers', lls)
-  }, [routes, routeIndex, layers.routes])
+  }, [routes, routeIndex, layers.routes, navActive, userLocation])
 
   /* ---- draw from/to/waypoint pins ---- */
   useEffect(() => {
@@ -530,9 +573,11 @@ export default function MapView() {
   useEffect(() => {
     const engine = engineRef.current
     if (!engine || !routes.length) return
-    const lls = routes[0].geometry.coordinates.map(c => ({ lat: c[1], lng: c[0] }))
+    const activeRoute = routes[routeIndex] || routes[0]
+    if (!activeRoute) return
+    const lls = activeRoute.geometry.coordinates.map(c => ({ lat: c[1], lng: c[0] }))
     engine.fitBounds(lls, { padding: 60 })
-  }, [routes])
+  }, [routes, routeIndex])
 
   /* ---- fit to search results ---- */
   useEffect(() => {

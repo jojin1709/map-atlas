@@ -186,26 +186,36 @@ async function routeValhalla(costing: string, points: { lat: number; lng: number
   // Convert Valhalla response to OSRM-like format
   const valhallaLegs = j.trip.legs as Array<{
     summary?: { length?: number; time?: number }
+    shape?: string
     maneuvers?: Array<Record<string, unknown>>
   }>
+
+  // Decode shape across all legs
+  const coords: [number, number][] = []
+  for (const leg of valhallaLegs) {
+    if (leg.shape) coords.push(...decodePolyline(leg.shape))
+  }
+
   const legs = valhallaLegs.map(leg => ({
-    steps: (leg.maneuvers || []).map((m: Record<string, unknown>) => ({
-      maneuver: {
-        type: valhallaTypeToOSRM(String(m.type || '')),
-        modifier: valhallaModifierToOSRM(String(m.modifier || '')),
-        location: [0, 0] as [number, number],
-      },
-      name: String(m.instruction || ''),
-      distance: Number(m.distance || 0) * 1000,
-      duration: Number(m.time || 0),
-      geometry: { coordinates: [] as [number, number][] },
-    })),
+    steps: (leg.maneuvers || []).map((m: Record<string, unknown>) => {
+      const idx = Number(m.begin_shape_index ?? 0)
+      const pt = coords[idx] || [0, 0]
+      return {
+        maneuver: {
+          type: valhallaTypeToOSRM(String(m.type || '')),
+          modifier: valhallaModifierToOSRM(String(m.modifier || '')),
+          location: [pt[0], pt[1]] as [number, number],
+        },
+        name: String(m.instruction || ''),
+        distance: Number(m.distance || 0) * 1000,
+        duration: Number(m.time || 0),
+        geometry: { coordinates: [] as [number, number][] },
+      }
+    }),
     distance: Number(leg.summary?.length || 0) * 1000,
     duration: Number(leg.summary?.time || 0),
   }))
 
-  // Decode shape (Valhalla returns encoded polyline)
-  const coords = decodePolyline(j.trip.legs[0]?.shape || '')
   const tripSummary = j.trip.summary as { length?: number; time?: number } | undefined
 
   return [{

@@ -463,6 +463,12 @@ button:disabled {
   justify-content: center;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
+.dark .hamburger {
+  background: #18181b;
+  border-color: #27272a;
+  color: #f4f4f5;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
 
 /* ---- mobile ---- */
 @media (max-width: 768px) {

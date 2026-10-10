@@ -19,9 +19,12 @@ import {
   ChevronRight,
   Crosshair,
   CheckCircle2,
+  Eye,
+  Navigation as NavIcon,
 } from 'lucide-react'
 
 function StepIcon({ type, modifier, className = 'w-7 h-7' }: { type: string; modifier?: string; className?: string }) {
+  if (type === 'depart') return <NavIcon className={`${className} text-emerald-400`} />
   if (type === 'arrive') return <Flag className={`${className} text-emerald-400`} />
   if (type === 'roundabout' || type === 'rotary') return <RotateCcw className={`${className} text-sky-400`} />
   if (modifier?.includes('left')) return <CornerUpLeft className={`${className} text-white`} />
@@ -34,6 +37,7 @@ export default function NavOverlay() {
   const [activeStep, setActiveStep] = useState(0)
   const [distToNext, setDistToNext] = useState(0)
   const [autoCenter, setAutoCenter] = useState(true)
+  const [isOverview, setIsOverview] = useState(false)
   const [isOfflineReady, setIsOfflineReady] = useState(false)
 
   const routes = useAppStore(s => s.routes)
@@ -116,7 +120,12 @@ export default function NavOverlay() {
 
   // Real-time step tracking & distance calculation
   useEffect(() => {
-    if (!navActive || !userLocation || !steps.length) return
+    if (!navActive || !userLocation || !steps.length || !route) return
+
+    const startCoord = route.geometry.coordinates[0]
+    const startPt = startCoord ? { lat: startCoord[1], lng: startCoord[0] } : null
+    const distToStart = startPt ? haversine(userLocation, startPt) : 0
+    const isOff = distToStart > 250 && activeStep === 0
 
     // Find nearest step within a reasonable forward window
     let bestIdx = activeStep
@@ -147,23 +156,36 @@ export default function NavOverlay() {
       // Announce step if changed
       if (lastSpokenRef.current !== bestIdx) {
         lastSpokenRef.current = bestIdx
-        const text = describeStep(steps[bestIdx])
+        const text = isOff
+          ? `Head towards the route start, ${formatDistance(distToStart)} away.`
+          : describeStep(steps[bestIdx])
         speakInstruction(text)
       }
     }
 
-    // Auto-center camera to phone position
-    if (autoCenter) {
+    // Camera auto-framing: if user is off-route, frame both user & route start
+    if (autoCenter && !isOverview) {
       const engine = getEngine()
-      if (engine) engine.flyTo(userLocation.lat, userLocation.lng, 17)
+      if (engine) {
+        if (isOff && startPt) {
+          engine.fitBounds([userLocation, startPt], { padding: 90, maxZoom: 15 })
+        } else {
+          engine.flyTo(userLocation.lat, userLocation.lng, 16)
+        }
+      }
     }
-  }, [userLocation, navActive, steps, activeStep, autoCenter, speakInstruction])
+  }, [userLocation, navActive, steps, activeStep, autoCenter, isOverview, route, speakInstruction])
 
   if (!navActive || !route || !steps.length) return null
 
   const step = steps[activeStep]
   if (!step) return null
   const isLast = activeStep >= steps.length - 1
+
+  const startCoord = route.geometry.coordinates[0]
+  const startPt = startCoord ? { lat: startCoord[1], lng: startCoord[0] } : null
+  const distToStart = userLocation && startPt ? haversine(userLocation, startPt) : 0
+  const isOffRoute = distToStart > 250 && activeStep === 0
 
   // Compute remaining distance & ETA
   const remainingDistance = steps.slice(activeStep).reduce((acc, s) => acc + s.distance, 0)
@@ -181,15 +203,27 @@ export default function NavOverlay() {
           {/* Main Direction Banner */}
           <div className="px-4 py-3.5 flex items-center gap-3.5 bg-gradient-to-r from-emerald-650 via-emerald-600 to-teal-600 text-white">
             <div className="w-12 h-12 rounded-xl bg-black/25 flex items-center justify-center shrink-0 shadow-inner">
-              <StepIcon type={step.maneuver.type} modifier={step.maneuver.modifier} className="w-7 h-7" />
+              {isOffRoute ? (
+                <NavIcon className="w-7 h-7 text-emerald-300" />
+              ) : (
+                <StepIcon type={step.maneuver.type} modifier={step.maneuver.modifier} className="w-7 h-7" />
+              )}
             </div>
 
             <div className="flex-1 min-w-0">
               <div className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-none">
-                {isLast ? 'Arriving' : formatDistance(distToNext || step.distance)}
+                {isOffRoute
+                  ? formatDistance(distToStart)
+                  : isLast
+                  ? 'Arriving'
+                  : formatDistance(distToNext || step.distance)}
               </div>
               <div className="text-sm font-semibold truncate opacity-95 mt-1">
-                {isLast ? 'At your destination' : describeStep(step)}
+                {isOffRoute
+                  ? 'Head to route start'
+                  : isLast
+                  ? 'At your destination'
+                  : describeStep(step)}
               </div>
             </div>
 
@@ -203,13 +237,18 @@ export default function NavOverlay() {
             </button>
           </div>
 
-          {/* Sub-instruction: then next maneuver */}
-          {nextStep && (
+          {/* Sub-instruction: next maneuver */}
+          {isOffRoute && steps[0] ? (
+            <div className="px-4 py-2 bg-zinc-900 text-xs text-zinc-300 flex items-center gap-2 border-t border-zinc-800">
+              <StepIcon type={steps[0].maneuver.type} modifier={steps[0].maneuver.modifier} className="w-4 h-4 text-zinc-400" />
+              <span className="truncate">Then: {describeStep(steps[0])}</span>
+            </div>
+          ) : nextStep ? (
             <div className="px-4 py-2 bg-zinc-900 text-xs text-zinc-300 flex items-center gap-2 border-t border-zinc-800">
               <StepIcon type={nextStep.maneuver.type} modifier={nextStep.maneuver.modifier} className="w-4 h-4 text-zinc-400" />
               <span className="truncate">Then: {describeStep(nextStep)}</span>
             </div>
-          )}
+          ) : null}
 
           {/* Progress bar */}
           <div className="h-1 bg-zinc-800">
@@ -238,18 +277,59 @@ export default function NavOverlay() {
 
           {/* Center: Controls & Step Skipper */}
           <div className="flex items-center gap-1.5 shrink-0">
+            {/* Full Route Overview Toggle */}
+            <button
+              onClick={() => {
+                const engine = getEngine()
+                if (!engine || !route) return
+                const nextOverview = !isOverview
+                setIsOverview(nextOverview)
+                if (nextOverview) {
+                  setAutoCenter(false)
+                  const allCoords = route.geometry.coordinates.map(c => ({ lat: c[1], lng: c[0] }))
+                  if (userLocation) allCoords.push(userLocation)
+                  engine.fitBounds(allCoords, { padding: 70 })
+                } else {
+                  setAutoCenter(true)
+                  if (userLocation) {
+                    if (isOffRoute && startPt) {
+                      engine.fitBounds([userLocation, startPt], { padding: 90, maxZoom: 15 })
+                    } else {
+                      engine.flyTo(userLocation.lat, userLocation.lng, 16)
+                    }
+                  }
+                }
+              }}
+              className={`p-2 rounded-xl border text-xs font-semibold transition flex items-center gap-1 ${
+                isOverview
+                  ? 'bg-blue-600 text-white border-blue-700 shadow-sm'
+                  : 'bg-gray-100 dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-gray-300'
+              }`}
+              title={isOverview ? 'Back to turn tracking' : 'Overview entire route'}
+            >
+              <Eye className="w-4 h-4" />
+            </button>
+
             {/* Re-center Camera */}
             <button
               onClick={() => {
-                setAutoCenter(!autoCenter)
-                if (userLocation) getEngine()?.flyTo(userLocation.lat, userLocation.lng, 17)
+                setAutoCenter(true)
+                setIsOverview(false)
+                const engine = getEngine()
+                if (engine && userLocation) {
+                  if (isOffRoute && startPt) {
+                    engine.fitBounds([userLocation, startPt], { padding: 90, maxZoom: 15 })
+                  } else {
+                    engine.flyTo(userLocation.lat, userLocation.lng, 16)
+                  }
+                }
               }}
               className={`p-2 rounded-xl border text-xs font-semibold transition flex items-center gap-1 ${
-                autoCenter
+                autoCenter && !isOverview
                   ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400'
                   : 'bg-gray-100 dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-gray-300'
               }`}
-              title="Auto-center camera on you"
+              title="Re-center on your location"
             >
               <Crosshair className="w-4 h-4" />
             </button>
@@ -269,20 +349,38 @@ export default function NavOverlay() {
 
             {/* Prev step */}
             <button
-              onClick={() => setActiveStep(Math.max(0, activeStep - 1))}
+              onClick={() => {
+                const nextIdx = Math.max(0, activeStep - 1)
+                setActiveStep(nextIdx)
+                setAutoCenter(false)
+                setIsOverview(false)
+                const loc = steps[nextIdx]?.maneuver.location
+                if (loc && (loc[0] || loc[1])) {
+                  getEngine()?.flyTo(loc[1], loc[0], 16)
+                }
+              }}
               disabled={activeStep === 0}
               className="p-2 rounded-xl bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 disabled:opacity-40 transition"
-              title="Previous turn"
+              title="Previous turn preview"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
 
             {/* Next step */}
             <button
-              onClick={() => setActiveStep(Math.min(steps.length - 1, activeStep + 1))}
+              onClick={() => {
+                const nextIdx = Math.min(steps.length - 1, activeStep + 1)
+                setActiveStep(nextIdx)
+                setAutoCenter(false)
+                setIsOverview(false)
+                const loc = steps[nextIdx]?.maneuver.location
+                if (loc && (loc[0] || loc[1])) {
+                  getEngine()?.flyTo(loc[1], loc[0], 16)
+                }
+              }}
               disabled={isLast}
               className="p-2 rounded-xl bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 disabled:opacity-40 transition"
-              title="Next turn"
+              title="Next turn preview"
             >
               <ChevronRight className="w-4 h-4" />
             </button>

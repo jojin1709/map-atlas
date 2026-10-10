@@ -1,4 +1,9 @@
+/// <reference lib="webworker" />
+
 /* Service Worker for Map Atlas PWA — caches tiles and app shell. */
+
+/** @type {ServiceWorkerGlobalScope} */
+const sw = /** @type {any} */ (self)
 
 const CACHE_NAME = 'map-atlas-v2'
 const TILE_CACHE = 'map-atlas-tiles-v2'
@@ -10,16 +15,16 @@ const APP_SHELL = [
 ]
 
 // Install: cache app shell
-self.addEventListener('install', event => {
+sw.addEventListener('install', (/** @type {ExtendableEvent} */ event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
+      .then(() => sw.skipWaiting())
   )
 })
 
 // Activate: clean old caches
-self.addEventListener('activate', event => {
+sw.addEventListener('activate', (/** @type {ExtendableEvent} */ event) => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
@@ -27,12 +32,12 @@ self.addEventListener('activate', event => {
           .filter(k => k !== CACHE_NAME && k !== TILE_CACHE)
           .map(k => caches.delete(k))
       )
-    ).then(() => self.clients.claim())
+    ).then(() => sw.clients.claim())
   )
 })
 
 // Fetch: strategy depends on request type
-self.addEventListener('fetch', event => {
+sw.addEventListener('fetch', (/** @type {FetchEvent} */ event) => {
   const url = new URL(event.request.url)
 
   // Tile requests: cache-first with network fallback
@@ -54,7 +59,7 @@ self.addEventListener('fetch', event => {
   }
 
   // App shell: network-first with cache fallback
-  if (url.origin === self.location.origin) {
+  if (url.origin === sw.location.origin) {
     event.respondWith(
       fetch(event.request)
         .then(response => {
@@ -84,7 +89,7 @@ self.addEventListener('fetch', event => {
   )
 })
 
-function isTileRequest(url: URL): boolean {
+function isTileRequest(url) {
   const host = url.hostname
   return (
     host.includes('tile.openstreetmap.org') ||
@@ -98,7 +103,7 @@ function isTileRequest(url: URL): boolean {
   )
 }
 
-function isApiRequest(url: URL): boolean {
+function isApiRequest(url) {
   const host = url.hostname
   return (
     host.includes('nominatim') ||

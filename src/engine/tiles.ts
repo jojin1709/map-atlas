@@ -64,11 +64,20 @@ export class TileLayer {
             .replace('{z}', String(zoom))
             .replace('{x}', String(wrappedX))
             .replace('{y}', String(ty))
-          if (dpr >= 2) {
-            url = url.replace(/(\.png|\.jpg|\.webp)$/i, '@2x$1')
+          
+          if (url.includes('{r}')) {
+            url = url.replace('{r}', dpr >= 2 ? '@2x' : '')
           }
+
           img.src = url
-          img.onerror = () => img!.classList.add('missing')
+          img.onerror = () => {
+            const currentSrc = img?.getAttribute('src') || ''
+            if (currentSrc.includes('@2x')) {
+              img!.src = currentSrc.replace('@2x', '')
+            } else {
+              img?.classList.add('missing')
+            }
+          }
           this.container.appendChild(img)
           this.imgs.set(key, img)
         }
