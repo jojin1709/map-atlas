@@ -6,7 +6,7 @@
  * - Realistic directional lighting & atmospheric rim glow (Fresnel shader)
  * - Deep space starfield background with subtle cosmic glow
  * - Dynamic tile layer composition (OSM, Satellite, Dark, Topo)
- * - Orbit drag rotation with smooth inertia & optional gentle idle auto-rotation
+ * - Orbit drag rotation with smooth inertia & gentle idle auto-rotation
  * - Interactive raycasting (lat/lng under cursor, click & hover events)
  * - 3D marker & pin projection with horizon culling
  * - Smooth camera zoom and flight transitions into 2D flat map
@@ -21,8 +21,6 @@ export interface GlobeEngineOptions {
   tileUrls?: string[]
   cssFilter?: string
   autoRotate?: boolean
-  starfield?: boolean
-  atmosphere?: boolean
   onClick?: (latlng: LatLng) => void
   onMove?: (latlng: LatLng) => void
   onZoomInToFlat?: (center: LatLng) => void
@@ -37,7 +35,10 @@ export interface GlobeMarker {
   size?: number
 }
 
-// Shader sources
+// -------------------------------------------------------------------------
+// Shaders
+// -------------------------------------------------------------------------
+
 const VERTEX_SHADER_SRC = `
 attribute vec3 aPosition;
 attribute vec3 aNormal;
@@ -81,64 +82,35 @@ void main() {
 
   vec4 texColor = texture2D(uSampler, vUV);
 
-  // Soft directional lighting from sun
+  // Vibrant base Earth color so the sphere is never empty or dark
+  vec3 oceanBlue = vec3(0.09, 0.32, 0.65);
+  vec3 baseColor = mix(oceanBlue, texColor.rgb, clamp(length(texColor.rgb) * 1.8, 0.0, 1.0));
+
+  // Directional sunlight + ambient light
   float diff = max(dot(N, normalize(uSunDir)), 0.0);
-  float ambient = 0.55;
-  float light = ambient + (1.0 - ambient) * diff;
+  float light = 0.50 + 0.50 * diff;
 
   // Fresnel atmospheric rim glow
   float rim = 1.0 - max(dot(N, V), 0.0);
-  float glow = pow(rim, 2.5) * uAtmosphereStrength;
+  float glow = pow(rim, 2.4) * uAtmosphereStrength;
 
-  // Ocean shine/specular
+  // Specular shine on water
   vec3 H = normalize(normalize(uSunDir) + V);
-  float spec = pow(max(dot(N, H), 0.0), 16.0) * 0.15;
+  float spec = pow(max(dot(N, H), 0.0), 16.0) * 0.18;
 
-  vec3 col = texColor.rgb * light + uAtmosphereColor * glow + vec3(spec);
-  gl_FragColor = vec4(col, 1.0);
-}
-`
-
-// Atmosphere halo glow shader
-const HALO_VERTEX_SRC = `
-attribute vec3 aPosition;
-uniform mat4 uMVP;
-varying vec3 vPosition;
-
-void main() {
-  vPosition = aPosition;
-  gl_Position = uMVP * vec4(aPosition, 1.0);
-}
-`
-
-const HALO_FRAGMENT_SRC = `
-#ifdef GL_FRAGMENT_PRECISION_HIGH
-precision highp float;
-#else
-precision mediump float;
-#endif
-
-varying vec3 vPosition;
-uniform vec3 uAtmosphereColor;
-
-void main() {
-  float dist = length(vPosition.xy);
-  if (dist < 0.98 || dist > 1.25) {
-    discard;
-  }
-  float alpha = smoothstep(1.25, 1.0, dist) * smoothstep(0.98, 1.02, dist) * 0.5;
-  gl_FragColor = vec4(uAtmosphereColor, alpha);
+  vec3 finalColor = baseColor * light + uAtmosphereColor * glow + vec3(spec);
+  gl_FragColor = vec4(finalColor, 1.0);
 }
 `
 
 export class GlobeEngine {
   private container: HTMLElement
   private canvas: HTMLCanvasElement
+  private haloEl: HTMLElement
   private gl: WebGLRenderingContext | null = null
   private overlayEl: HTMLElement
 
   private prog: WebGLProgram | null = null
-  private haloProg: WebGLProgram | null = null
   private texture: WebGLTexture | null = null
   private textureCanvas: HTMLCanvasElement
   private textureCtx: CanvasRenderingContext2D | null
@@ -151,11 +123,8 @@ export class GlobeEngine {
     count: number
   } | null = null
 
-  private haloVAO: {
-    posBuf: WebGLBuffer
-    idxBuf: WebGLBuffer
-    count: number
-  } | null = null
+  private is2DFallback = false
+  private ctx2D: CanvasRenderingContext2D | null = null
 
   // Orientation & view
   private yaw = 0 // longitude rotation around Y
@@ -193,6 +162,18 @@ export class GlobeEngine {
     this.container.style.position = 'relative'
     this.container.style.overflow = 'hidden'
     this.container.style.background = 'radial-gradient(ellipse at center, #0a1128 0%, #030712 100%)'
+
+    // Atmospheric halo ring behind globe
+    this.haloEl = document.createElement('div')
+    this.haloEl.className = 'globe-halo'
+    this.haloEl.style.position = 'absolute'
+    this.haloEl.style.left = '50%'
+    this.haloEl.style.top = '50%'
+    this.haloEl.style.transform = 'translate(-50%, -50%)'
+    this.haloEl.style.borderRadius = '50%'
+    this.haloEl.style.pointerEvents = 'none'
+    this.haloEl.style.boxShadow = '0 0 80px 20px rgba(56, 189, 248, 0.45), inset 0 0 50px rgba(56, 189, 248, 0.25)'
+    this.container.appendChild(this.haloEl)
 
     // Canvas
     this.canvas = document.createElement('canvas')
@@ -238,7 +219,6 @@ export class GlobeEngine {
   }
 
   setCenter(lat: number, lng: number): void {
-    // lng -> yaw, lat -> pitch
     this.targetYaw = (-lng * Math.PI) / 180
     this.targetPitch = (lat * Math.PI) / 180
     this.yaw = this.targetYaw
@@ -266,7 +246,6 @@ export class GlobeEngine {
   }
 
   private _syncMarkerElements(): void {
-    // Remove unused markers
     const activeIds = new Set(this.markers.map(m => m.id))
     for (const [id, el] of this.markerElements) {
       if (!activeIds.has(id)) {
@@ -274,7 +253,6 @@ export class GlobeEngine {
         this.markerElements.delete(id)
       }
     }
-    // Create new markers
     for (const m of this.markers) {
       if (!this.markerElements.has(m.id)) {
         const pin = document.createElement('div')
@@ -284,12 +262,11 @@ export class GlobeEngine {
         pin.style.pointerEvents = 'auto'
         pin.style.cursor = 'pointer'
         pin.style.display = 'none'
-        pin.style.transition = 'opacity 0.2s, transform 0.2s'
 
         const color = m.color || '#3b82f6'
         pin.innerHTML = `
           <div style="display:flex; flex-direction:column; align-items:center;">
-            ${m.label ? `<span style="background:rgba(15,23,42,0.85); color:#fff; font-size:11px; font-weight:600; padding:2px 6px; border-radius:4px; margin-bottom:2px; white-space:nowrap; border:1px solid rgba(255,255,255,0.2); box-shadow:0 2px 6px rgba(0,0,0,0.4);">${m.label}</span>` : ''}
+            ${m.label ? `<span style="background:rgba(15,23,42,0.88); color:#fff; font-size:11px; font-weight:600; padding:2px 6px; border-radius:4px; margin-bottom:2px; white-space:nowrap; border:1px solid rgba(255,255,255,0.2); box-shadow:0 2px 6px rgba(0,0,0,0.5);">${m.label}</span>` : ''}
             <div style="width:14px; height:14px; border-radius:50%; background:${color}; border:2px solid #fff; box-shadow:0 0 10px ${color};"></div>
           </div>
         `
@@ -305,9 +282,6 @@ export class GlobeEngine {
     }
   }
 
-  private is2DFallback = false
-  private ctx2D: CanvasRenderingContext2D | null = null
-
   private _initGL(): void {
     const gl =
       this.canvas.getContext('webgl', { antialias: true, alpha: true }) ||
@@ -320,7 +294,6 @@ export class GlobeEngine {
     }
     this.gl = gl
 
-    // Compile main sphere program
     const vs = this._compileShader(gl.VERTEX_SHADER, VERTEX_SHADER_SRC)
     const fs = this._compileShader(gl.FRAGMENT_SHADER, FRAGMENT_SHADER_SRC)
     if (!vs || !fs) {
@@ -341,23 +314,9 @@ export class GlobeEngine {
     }
     this.prog = prog
 
-    // Compile atmosphere halo program
-    const hvs = this._compileShader(gl.VERTEX_SHADER, HALO_VERTEX_SRC)
-    const hfs = this._compileShader(gl.FRAGMENT_SHADER, HALO_FRAGMENT_SRC)
-    if (hvs && hfs) {
-      const haloProg = gl.createProgram()!
-      gl.attachShader(haloProg, hvs)
-      gl.attachShader(haloProg, hfs)
-      gl.linkProgram(haloProg)
-      if (gl.getProgramParameter(haloProg, gl.LINK_STATUS)) {
-        this.haloProg = haloProg
-      }
-    }
-
     this._initSphereMesh()
-    this._initHaloMesh()
 
-    // Texture
+    // Texture setup
     this.texture = gl.createTexture()
     gl.bindTexture(gl.TEXTURE_2D, this.texture)
     gl.texImage2D(
@@ -369,14 +328,16 @@ export class GlobeEngine {
       0,
       gl.RGBA,
       gl.UNSIGNED_BYTE,
-      new Uint8Array([30, 80, 180, 255])
+      new Uint8Array([25, 80, 175, 255])
     )
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 
+    gl.disable(gl.CULL_FACE)
     gl.enable(gl.DEPTH_TEST)
+    gl.depthFunc(gl.LEQUAL)
     gl.enable(gl.BLEND)
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
   }
@@ -387,7 +348,7 @@ export class GlobeEngine {
     this.gl.shaderSource(s, src)
     this.gl.compileShader(s)
     if (!this.gl.getShaderParameter(s, this.gl.COMPILE_STATUS)) {
-      console.error(this.gl.getShaderInfoLog(s))
+      console.error('Shader compile error:', this.gl.getShaderInfoLog(s))
       this.gl.deleteShader(s)
       return null
     }
@@ -430,12 +391,13 @@ export class GlobeEngine {
       }
     }
 
+    // Counter-clockwise (CCW) front-facing triangles
     for (let i = 0; i < latBands; i++) {
       for (let j = 0; j < lonBands; j++) {
         const first = i * (lonBands + 1) + j
         const second = first + lonBands + 1
-        indices.push(first, second, first + 1)
-        indices.push(second, second + 1, first + 1)
+        indices.push(first, first + 1, second)
+        indices.push(second, first + 1, second + 1)
       }
     }
 
@@ -464,44 +426,6 @@ export class GlobeEngine {
     }
   }
 
-  private _initHaloMesh(): void {
-    if (!this.gl) return
-    const gl = this.gl
-    const segments = 64
-    const positions: number[] = []
-    const indices: number[] = []
-
-    for (let i = 0; i <= segments; i++) {
-      const angle = (i * 2 * Math.PI) / segments
-      const cos = Math.cos(angle)
-      const sin = Math.sin(angle)
-      // Inner circle (radius 0.98)
-      positions.push(cos * 0.98, sin * 0.98, 0)
-      // Outer circle (radius 1.25)
-      positions.push(cos * 1.25, sin * 1.25, 0)
-    }
-
-    for (let i = 0; i < segments; i++) {
-      const idx = i * 2
-      indices.push(idx, idx + 1, idx + 2)
-      indices.push(idx + 1, idx + 3, idx + 2)
-    }
-
-    const posBuf = gl.createBuffer()!
-    gl.bindBuffer(gl.ARRAY_BUFFER, posBuf)
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW)
-
-    const idxBuf = gl.createBuffer()!
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, idxBuf)
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW)
-
-    this.haloVAO = {
-      posBuf,
-      idxBuf,
-      count: indices.length,
-    }
-  }
-
   private _generateFallbackTexture(): void {
     if (!this.textureCtx) return
     const ctx = this.textureCtx
@@ -511,27 +435,27 @@ export class GlobeEngine {
     const isDark = this.currentStyleKey === 'dark'
     const isSat = this.currentStyleKey === 'satellite'
 
-    // Deep water color
+    // Vibrant ocean gradient
     const waterGrad = ctx.createLinearGradient(0, 0, 0, h)
     if (isSat) {
-      waterGrad.addColorStop(0, '#091c33')
-      waterGrad.addColorStop(0.5, '#0a2e5c')
-      waterGrad.addColorStop(1, '#091c33')
+      waterGrad.addColorStop(0, '#0c274c')
+      waterGrad.addColorStop(0.5, '#133e75')
+      waterGrad.addColorStop(1, '#0c274c')
     } else if (isDark) {
-      waterGrad.addColorStop(0, '#090d16')
-      waterGrad.addColorStop(0.5, '#0f172a')
-      waterGrad.addColorStop(1, '#090d16')
+      waterGrad.addColorStop(0, '#0a0f1d')
+      waterGrad.addColorStop(0.5, '#111827')
+      waterGrad.addColorStop(1, '#0a0f1d')
     } else {
-      waterGrad.addColorStop(0, '#93c5fd')
-      waterGrad.addColorStop(0.5, '#bfdbfe')
-      waterGrad.addColorStop(1, '#93c5fd')
+      waterGrad.addColorStop(0, '#1e40af')
+      waterGrad.addColorStop(0.5, '#2563eb')
+      waterGrad.addColorStop(1, '#1e40af')
     }
     ctx.fillStyle = waterGrad
     ctx.fillRect(0, 0, w, h)
 
-    // Lat/Long subtle grid lines
-    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'
-    ctx.lineWidth = 1
+    // Latitude & Longitude grid lines
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.12)'
+    ctx.lineWidth = 1.5
     for (let x = 0; x <= w; x += w / 12) {
       ctx.beginPath()
       ctx.moveTo(x, 0)
@@ -545,20 +469,25 @@ export class GlobeEngine {
       ctx.stroke()
     }
 
-    // Stylized landmass placeholders
-    ctx.fillStyle = isSat ? '#1e3a1f' : isDark ? '#1e293b' : '#dcfce7'
+    // Stylized Earth continents
+    ctx.fillStyle = isSat ? '#2d5a27' : isDark ? '#334155' : '#86efac'
     const continents = [
-      { x: w * 0.45, y: h * 0.45, rx: w * 0.12, ry: h * 0.22 }, // Africa
-      { x: w * 0.65, y: h * 0.28, rx: w * 0.22, ry: h * 0.18 }, // Eurasia
-      { x: w * 0.22, y: h * 0.28, rx: w * 0.14, ry: h * 0.16 }, // N. America
-      { x: w * 0.30, y: h * 0.65, rx: w * 0.08, ry: h * 0.18 }, // S. America
-      { x: w * 0.82, y: h * 0.70, rx: w * 0.08, ry: h * 0.10 }, // Australia
+      { x: w * 0.48, y: h * 0.48, rx: w * 0.12, ry: h * 0.22 }, // Africa
+      { x: w * 0.68, y: h * 0.30, rx: w * 0.22, ry: h * 0.18 }, // Eurasia
+      { x: w * 0.24, y: h * 0.30, rx: w * 0.15, ry: h * 0.16 }, // N. America
+      { x: w * 0.32, y: h * 0.66, rx: w * 0.09, ry: h * 0.18 }, // S. America
+      { x: w * 0.84, y: h * 0.72, rx: w * 0.08, ry: h * 0.11 }, // Australia
     ]
     for (const c of continents) {
       ctx.beginPath()
       ctx.ellipse(c.x, c.y, c.rx, c.ry, 0, 0, Math.PI * 2)
       ctx.fill()
     }
+
+    // Polar ice caps
+    ctx.fillStyle = '#f8fafc'
+    ctx.fillRect(0, 0, w, h * 0.08)
+    ctx.fillRect(0, h * 0.92, w, h * 0.08)
 
     this._updateGLTexture()
   }
@@ -676,7 +605,6 @@ export class GlobeEngine {
       const delta = e.deltaY * 0.002
       this.targetDistance = Math.max(2.1, Math.min(4.5, this.targetDistance + delta))
 
-      // If user zooms in close enough, smoothly switch to Flat Map!
       if (this.targetDistance <= 2.12 && e.deltaY < 0) {
         const center = this.getCenter()
         this.zoomInFlatCb?.(center)
@@ -767,6 +695,12 @@ export class GlobeEngine {
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
     this.canvas.width = w * dpr
     this.canvas.height = h * dpr
+
+    // Update halo size
+    const minDim = Math.min(w, h)
+    const globeDiameter = (minDim * 0.85 * (2.8 / this.distance))
+    this.haloEl.style.width = `${globeDiameter * 0.98}px`
+    this.haloEl.style.height = `${globeDiameter * 0.98}px`
   }
 
   flyTo(lat: number, lng: number, targetDist = 2.4, onComplete?: () => void): void {
@@ -777,18 +711,15 @@ export class GlobeEngine {
     const destYaw = (-lng * Math.PI) / 180
     const destPitch = (lat * Math.PI) / 180
 
-    // Find shortest yaw path around circle
     let diffYaw = ((destYaw - startYaw + Math.PI) % (2 * Math.PI)) - Math.PI
     if (diffYaw < -Math.PI) diffYaw += 2 * Math.PI
 
     const finalPitch = Math.max(-1.45, Math.min(1.45, destPitch))
-
     const duration = 800
     const start = performance.now()
 
     const step = (now: number) => {
       const k = Math.min(1, (now - start) / duration)
-      // Ease out cubic
       const ease = 1 - Math.pow(1 - k, 3)
 
       this.targetYaw = startYaw + diffYaw * ease
@@ -837,7 +768,6 @@ export class GlobeEngine {
     const aspect = w / h
     const tanFov = Math.tan(fov / 2)
 
-    // Ray origin & direction in camera space
     const roX = 0
     const roY = 0
     const roZ = this.distance
@@ -850,8 +780,6 @@ export class GlobeEngine {
     const dirY = rdy / len
     const dirZ = rdz / len
 
-    // Intersect sphere radius R=1 at origin
-    // |ro + t*dir|^2 = 1
     const b = 2 * (roX * dirX + roY * dirY + roZ * dirZ)
     const c = roX * roX + roY * roY + roZ * roZ - 1
     const disc = b * b - 4 * c
@@ -860,27 +788,22 @@ export class GlobeEngine {
     const t = (-b - Math.sqrt(disc)) / 2
     if (t < 0) return null
 
-    // Hit point in world/camera space
     const hx = roX + t * dirX
     const hy = roY + t * dirY
     const hz = roZ + t * dirZ
 
-    // Un-rotate by pitch (X axis) then yaw (Y axis)
-    // First inverse pitch around X:
     const cosP = Math.cos(-this.pitch)
     const sinP = Math.sin(-this.pitch)
     const px1 = hx
     const py1 = hy * cosP - hz * sinP
     const pz1 = hy * sinP + hz * cosP
 
-    // Then inverse yaw around Y:
     const cosY = Math.cos(-this.yaw)
     const sinY = Math.sin(-this.yaw)
     const objX = px1 * cosY + pz1 * sinY
     const objY = py1
     const objZ = -px1 * sinY + pz1 * cosY
 
-    // Convert local sphere point (objX, objY, objZ) to lat/lng
     const lat = Math.asin(Math.max(-1, Math.min(1, objY))) * (180 / Math.PI)
     const lng = Math.atan2(objX, objZ) * (180 / Math.PI)
     return { lat, lng }
@@ -894,12 +817,10 @@ export class GlobeEngine {
     const latRad = (lat * Math.PI) / 180
     const lngRad = (lng * Math.PI) / 180
 
-    // Local sphere coordinates (radius 1.0)
     const objX = Math.cos(latRad) * Math.sin(lngRad)
     const objY = Math.sin(latRad)
     const objZ = Math.cos(latRad) * Math.cos(lngRad)
 
-    // Rotate by yaw (Y axis) then pitch (X axis)
     const cosY = Math.cos(this.yaw)
     const sinY = Math.sin(this.yaw)
     const wx1 = objX * cosY - objZ * sinY
@@ -912,13 +833,10 @@ export class GlobeEngine {
     const wy = wy1 * cosP - wz1 * sinP
     const wz = wy1 * sinP + wz1 * cosP
 
-    // Is it facing the camera? (Camera is at [0, 0, distance])
-    // The surface normal is (wx, wy, wz). If wz < 0.1, it is facing away or over horizon.
     if (wz <= 0.05) {
       return { x: 0, y: 0, visible: false }
     }
 
-    // Perspective projection
     const fov = (45 * Math.PI) / 180
     const aspect = w / h
     const tanFov = Math.tan(fov / 2)
@@ -944,6 +862,10 @@ export class GlobeEngine {
     if (targetW > 0 && targetH > 0 && (this.canvas.width !== targetW || this.canvas.height !== targetH)) {
       this.canvas.width = targetW
       this.canvas.height = targetH
+      const minDim = Math.min(cw, ch)
+      const globeDiameter = minDim * 0.85 * (2.8 / this.distance)
+      this.haloEl.style.width = `${globeDiameter * 0.98}px`
+      this.haloEl.style.height = `${globeDiameter * 0.98}px`
     }
 
     // Inertia & Auto-rotation
@@ -951,7 +873,6 @@ export class GlobeEngine {
       if (this.autoRotate) {
         this.targetYaw += 0.0012
       } else {
-        // Friction
         this.velYaw *= 0.92
         this.velPitch *= 0.92
         this.targetYaw += this.velYaw * 16
@@ -985,16 +906,6 @@ export class GlobeEngine {
     const cy = h / 2
     const radius = Math.min(w, h) * (0.85 / this.distance)
 
-    // Outer atmosphere glow
-    const haloGrad = ctx.createRadialGradient(cx, cy, radius * 0.95, cx, cy, radius * 1.25)
-    haloGrad.addColorStop(0, 'rgba(56, 189, 248, 0.4)')
-    haloGrad.addColorStop(0.5, 'rgba(56, 189, 248, 0.15)')
-    haloGrad.addColorStop(1, 'rgba(56, 189, 248, 0)')
-    ctx.fillStyle = haloGrad
-    ctx.beginPath()
-    ctx.arc(cx, cy, radius * 1.25, 0, Math.PI * 2)
-    ctx.fill()
-
     // Earth Sphere Disc
     ctx.save()
     ctx.beginPath()
@@ -1018,7 +929,7 @@ export class GlobeEngine {
       cy,
       radius
     )
-    sphereGrad.addColorStop(0, 'rgba(255, 255, 255, 0.15)')
+    sphereGrad.addColorStop(0, 'rgba(255, 255, 255, 0.20)')
     sphereGrad.addColorStop(0.65, 'rgba(0, 0, 0, 0)')
     sphereGrad.addColorStop(1, 'rgba(2, 6, 23, 0.85)')
     ctx.fillStyle = sphereGrad
@@ -1060,35 +971,7 @@ export class GlobeEngine {
     const mvMat = mat4Multiply(vMat, mMat)
     const mvpMat = mat4Multiply(pMat, mvMat)
 
-    // 1. Render Atmosphere Halo (behind/around the sphere)
-    if (this.haloProg && this.haloVAO) {
-      gl.useProgram(this.haloProg)
-      gl.depthMask(false)
-
-      const haloMVP = mat4Multiply(pMat, vMat)
-      const uHaloMVP = gl.getUniformLocation(this.haloProg, 'uMVP')
-      gl.uniformMatrix4fv(uHaloMVP, false, haloMVP)
-
-      const uHaloColor = gl.getUniformLocation(this.haloProg, 'uAtmosphereColor')
-      const atmColor = this.currentStyleKey === 'satellite'
-        ? [0.2, 0.55, 0.95]
-        : this.currentStyleKey === 'dark'
-        ? [0.15, 0.35, 0.75]
-        : [0.35, 0.7, 1.0]
-      gl.uniform3fv(uHaloColor, atmColor)
-
-      const aHaloPos = gl.getAttribLocation(this.haloProg, 'aPosition')
-      gl.bindBuffer(gl.ARRAY_BUFFER, this.haloVAO.posBuf)
-      gl.enableVertexAttribArray(aHaloPos)
-      gl.vertexAttribPointer(aHaloPos, 3, gl.FLOAT, false, 0, 0)
-
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.haloVAO.idxBuf)
-      gl.drawElements(gl.TRIANGLES, this.haloVAO.count, gl.UNSIGNED_SHORT, 0)
-
-      gl.depthMask(true)
-    }
-
-    // 2. Render 3D Earth Sphere
+    // Render 3D Earth Sphere
     gl.useProgram(this.prog)
 
     const uMVP = gl.getUniformLocation(this.prog, 'uMVP')
@@ -1101,21 +984,21 @@ export class GlobeEngine {
 
     gl.uniformMatrix4fv(uMVP, false, mvpMat)
     gl.uniformMatrix4fv(uModel, false, mMat)
-    gl.uniform3f(uSunDir, 1.5, 1.2, 2.0)
+    gl.uniform3f(uSunDir, 1.4, 1.2, 2.0)
     const globeAtmColor = this.currentStyleKey === 'satellite'
       ? [0.25, 0.6, 1.0]
       : this.currentStyleKey === 'dark'
       ? [0.18, 0.4, 0.85]
-      : [0.4, 0.75, 1.0]
+      : [0.35, 0.75, 1.0]
     gl.uniform3fv(uAtmColor, globeAtmColor)
-    gl.uniform1f(uAtmStrength, this.currentStyleKey === 'dark' ? 0.9 : 0.65)
+    gl.uniform1f(uAtmStrength, this.currentStyleKey === 'dark' ? 0.9 : 0.70)
     gl.uniform3f(uEyePos, 0, 0, this.distance)
 
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, this.texture)
     gl.uniform1i(uSampler, 0)
 
-    // Attributes
+    // Bind sphere geometry buffers
     const aPos = gl.getAttribLocation(this.prog, 'aPosition')
     gl.bindBuffer(gl.ARRAY_BUFFER, this.sphereVAO.posBuf)
     gl.enableVertexAttribArray(aPos)
@@ -1153,6 +1036,7 @@ export class GlobeEngine {
   destroy(): void {
     if (this.rafId) cancelAnimationFrame(this.rafId)
     this.canvas.remove()
+    this.haloEl.remove()
     this.overlayEl.remove()
   }
 }
