@@ -28,13 +28,17 @@ import {
   Target,
   Camera,
   Loader2,
+  CloudDownload,
 } from 'lucide-react'
+import { downloadAreaOffline } from '../services/offline'
 
 export default function ToolsPanel() {
   const [weatherInfo, setWeatherInfo] = useState('')
   const [weatherLoading, setWeatherLoading] = useState(false)
   const [heatmapOn, setHeatmapOn] = useState(false)
   const [locating, setLocating] = useState(false)
+  const [downloadingArea, setDownloadingArea] = useState(false)
+  const [areaProgress, setAreaProgress] = useState(0)
 
   const style = useAppStore(s => s.style)
   const dark = useAppStore(s => s.dark)
@@ -113,6 +117,22 @@ export default function ToolsPanel() {
       useAppStore.getState().showToast(err instanceof Error ? err.message : 'Location detection failed')
     } finally {
       setLocating(false)
+    }
+  }
+
+  const handleDownloadArea = async () => {
+    const engine = getEngine()
+    const c = engine ? engine.getCenter() : (userLocation || { lat: 0, lng: 0 })
+    setDownloadingArea(true)
+    setAreaProgress(0)
+    useAppStore.getState().showToast('Caching map tiles for offline use…')
+    try {
+      const count = await downloadAreaOffline(c, pct => setAreaProgress(pct))
+      useAppStore.getState().showToast(`Offline map ready! (${count} tiles cached)`)
+    } catch {
+      useAppStore.getState().showToast('Failed to cache offline map')
+    } finally {
+      setDownloadingArea(false)
     }
   }
 
@@ -403,6 +423,19 @@ export default function ToolsPanel() {
         <button onClick={exportGeoJSON} className="ghost flex items-center gap-1.5" title="Export places as GeoJSON">
           <FileJson className="w-3.5 h-3.5" />
           <span>GeoJSON</span>
+        </button>
+        <button
+          onClick={handleDownloadArea}
+          disabled={downloadingArea}
+          className="ghost flex items-center gap-1.5"
+          title="Download & cache map tiles for offline mobile use"
+        >
+          {downloadingArea ? (
+            <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" />
+          ) : (
+            <CloudDownload className="w-3.5 h-3.5 text-emerald-500" />
+          )}
+          <span>{downloadingArea ? `Caching ${areaProgress}%` : 'Offline Map'}</span>
         </button>
       </div>
 

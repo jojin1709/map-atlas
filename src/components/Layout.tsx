@@ -57,7 +57,6 @@ export default function Layout() {
         <div className="panel-body">
           <SearchPanel />
           <DirectionsPanel />
-          <NavOverlay />
           <ToolsPanel />
           <LayersPanel />
           <PlacesPanel />
@@ -66,6 +65,7 @@ export default function Layout() {
         <Toast />
       </aside>
 
+      <NavOverlay />
       <ContextMenu />
       <PlaceCard />
       <StreetViewModal />

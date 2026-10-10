@@ -3,14 +3,18 @@ import { useAppStore } from '../store/useAppStore'
 import * as api from '../services/api'
 import { CONFIG } from '../config'
 import { formatDistance, formatDuration, parseLatLng } from '../services/geo'
+import { downloadRouteForOffline, getSavedOfflineRoute } from '../services/offline'
 import ElevationChart from './ElevationChart'
 import type { LatLng, GeocodeResult } from '../types'
-import { Navigation, ArrowUpDown, TrendingUp, Sparkles, MapPin } from 'lucide-react'
+import { Navigation, ArrowUpDown, TrendingUp, Sparkles, MapPin, Compass, Download, Check, Loader2 } from 'lucide-react'
 
 export default function DirectionsPanel() {
   const [fromText, setFromText] = useState('')
   const [toText, setToText] = useState('')
   const [showElev, setShowElev] = useState(false)
+  const [downloadingOffline, setDownloadingOffline] = useState(false)
+  const [downloadProgress, setDownloadProgress] = useState(0)
+  const [isOfflineSaved, setIsOfflineSaved] = useState(false)
   const [fromSuggestions, setFromSuggestions] = useState<GeocodeResult[]>([])
   const [toSuggestions, setToSuggestions] = useState<GeocodeResult[]>([])
   const [showFromSug, setShowFromSug] = useState(false)
@@ -151,6 +155,39 @@ export default function DirectionsPanel() {
     getRoute()
   }
 
+  // Check on mount if an offline route was saved
+  useEffect(() => {
+    const saved = getSavedOfflineRoute()
+    if (saved) {
+      setIsOfflineSaved(true)
+    }
+  }, [])
+
+  const handleStartNav = () => {
+    const store = useAppStore.getState()
+    store.setNavActive(true)
+    store.closePanel()
+    store.showToast('Starting GPS turn-by-turn navigation')
+  }
+
+  const handleDownloadOffline = async () => {
+    if (!route) return
+    setDownloadingOffline(true)
+    setDownloadProgress(0)
+    useAppStore.getState().showToast('Downloading route and map tiles for offline use…')
+    try {
+      const res = await downloadRouteForOffline(route, pct => {
+        setDownloadProgress(pct)
+      })
+      setIsOfflineSaved(true)
+      useAppStore.getState().showToast(`Saved for offline! (${res.totalTiles} map tiles cached)`)
+    } catch {
+      useAppStore.getState().showToast('Failed to download offline tiles')
+    } finally {
+      setDownloadingOffline(false)
+    }
+  }
+
   const route = routes[routeIndex]
 
   return (
@@ -289,6 +326,44 @@ export default function DirectionsPanel() {
 
       {route && (
         <>
+          {/* Prominent Navigation and Offline Download Buttons */}
+          <div className="mt-3 flex flex-col gap-2">
+            <button
+              onClick={handleStartNav}
+              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 active:scale-98"
+            >
+              <Compass className="w-4 h-4" />
+              <span>Start Navigation</span>
+            </button>
+
+            <button
+              onClick={handleDownloadOffline}
+              disabled={downloadingOffline}
+              className={`w-full py-2 px-3 text-xs font-semibold rounded-xl border transition flex items-center justify-center gap-1.5 ${
+                isOfflineSaved
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 border-gray-200 dark:border-zinc-700 text-gray-800 dark:text-gray-200'
+              }`}
+            >
+              {downloadingOffline ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />
+                  <span>Caching offline map… {downloadProgress}%</span>
+                </>
+              ) : isOfflineSaved ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Route Saved Offline (Ready)</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-3.5 h-3.5 text-blue-500" />
+                  <span>Save Route & Map for Offline Use</span>
+                </>
+              )}
+            </button>
+          </div>
+
           <div className="mt-2 flex gap-1.5">
             <button onClick={() => setShowElev(!showElev)} className="ghost small flex-1 flex items-center justify-center gap-1.5">
               <TrendingUp className="w-3.5 h-3.5 text-blue-500" />

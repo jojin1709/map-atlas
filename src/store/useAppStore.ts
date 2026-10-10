@@ -67,6 +67,12 @@ interface AppState {
   setDirStatus: (s: string) => void
   clearDirections: () => void
 
+  // GPS Navigation Mode
+  navActive: boolean
+  setNavActive: (active: boolean) => void
+  voiceNavEnabled: boolean
+  toggleVoiceNav: () => void
+
   // Drawing
   drawTool: DrawTool
   setDrawTool: (t: DrawTool) => void
@@ -201,7 +207,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   setRouteIndex: i => set({ routeIndex: i }),
   setRoutingProfile: p => set({ routingProfile: p }),
   setDirStatus: s => set({ dirStatus: s }),
-  clearDirections: () => set({ from: null, to: null, waypoints: [], routes: [], routeIndex: 0, dirStatus: '' }),
+  clearDirections: () => set({ from: null, to: null, waypoints: [], routes: [], routeIndex: 0, dirStatus: '', navActive: false }),
+
+  navActive: false,
+  setNavActive: active => set({ navActive: active }),
+  voiceNavEnabled: true,
+  toggleVoiceNav: () => set(s => ({ voiceNavEnabled: !s.voiceNavEnabled })),
 
   drawTool: 'none',
   setDrawTool: t => set({ drawTool: t }),
