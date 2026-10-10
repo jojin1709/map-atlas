@@ -8,7 +8,7 @@ import { useAppStore } from '../store/useAppStore'
 import * as api from '../services/api'
 import { haversine, formatDistance, polygonArea, formatArea, coordsDMS, toDecimal } from '../services/geo'
 import type { LatLng, LayerHandleLike } from '../types'
-import { Map as MapIcon, Globe as GlobeIcon, RotateCw, Tag } from 'lucide-react'
+import { Map as MapIcon, Globe as GlobeIcon, RotateCw, Tag, Camera } from 'lucide-react'
 
 type LayerList = LayerHandleLike[]
 
@@ -367,18 +367,41 @@ export default function MapView() {
     }
     const lls: LayerHandleLike[] = []
     earthquakeData.forEach(q => {
-      const color = q.mag >= 6 ? '#dc2626' : q.mag >= 4.5 ? '#ea580c' : '#ca8a04'
-      const rad = Math.max(5, Math.min(22, Math.round(q.mag * 3.2)))
+      const color = q.mag >= 6 ? 'rgba(239, 68, 68, 0.7)' : q.mag >= 4.5 ? 'rgba(249, 115, 22, 0.65)' : 'rgba(234, 179, 8, 0.6)'
+      const rad = Math.max(3, Math.min(8, 2.2 + q.mag * 0.7))
       const c = engine.addCircle({ lat: q.lat, lng: q.lng }, {
         radius: rad,
         fill: color,
         stroke: '#ffffff',
-        strokeWidth: 1.5,
+        strokeWidth: 0.75,
       })
       lls.push(c)
     })
     replaceLayers(engine, '__earthquakeLayers', lls)
   }, [layers.earthquakes, earthquakeData])
+
+  /* ---- draw user location marker on 2D map ---- */
+  useEffect(() => {
+    const engine = engineRef.current
+    if (!engine) return
+    if (!userLocation) {
+      replaceLayers(engine, '__userLocationLayers', [])
+      return
+    }
+    const pulseRing = engine.addCircle(userLocation, {
+      radius: 14,
+      fill: 'rgba(59, 130, 246, 0.22)',
+      stroke: 'rgba(59, 130, 246, 0.45)',
+      strokeWidth: 1.5,
+    })
+    const centerDot = engine.addCircle(userLocation, {
+      radius: 5.5,
+      fill: '#2563eb',
+      stroke: '#ffffff',
+      strokeWidth: 1.5,
+    })
+    replaceLayers(engine, '__userLocationLayers', [pulseRing, centerDot])
+  }, [userLocation])
 
   // Clean up globe on unmount
   useEffect(() => {
@@ -663,16 +686,28 @@ export default function MapView() {
           </div>
         </div>
       ) : (
-        <div className="absolute top-3 right-16 z-10">
+        <div className="absolute top-3 right-16 z-10 flex items-center gap-2">
+          <button
+            onClick={() => {
+              const engine = engineRef.current
+              const c = engine ? engine.getCenter() : (userLocation || { lat: 0, lng: 0 })
+              useAppStore.getState().setStreetViewCoord(c)
+            }}
+            className="px-3.5 py-2 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-xl shadow-md border border-gray-200 dark:border-zinc-800 font-semibold text-xs text-gray-800 dark:text-gray-100 flex items-center gap-2 hover:scale-105 active:scale-95 transition"
+            title="Open 360° Street View at current center"
+          >
+            <Camera className="w-3.5 h-3.5 text-sky-500" />
+            <span>Street View</span>
+          </button>
           <button
             onClick={() => {
               setGlobeMode(true)
               useAppStore.getState().showToast('Switched to 3D Globe view')
             }}
-            className="px-3.5 py-2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md rounded-xl shadow-md border border-gray-200 dark:border-gray-700 font-semibold text-xs text-gray-800 dark:text-gray-100 flex items-center gap-2 hover:scale-105 active:scale-95 hover:bg-white dark:hover:bg-gray-800 transition"
+            className="px-3.5 py-2 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-xl shadow-md border border-gray-200 dark:border-zinc-800 font-semibold text-xs text-gray-800 dark:text-gray-100 flex items-center gap-2 hover:scale-105 active:scale-95 transition"
             title="Switch to 3D Globe"
           >
-            <GlobeIcon className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <GlobeIcon className="w-3.5 h-3.5 text-blue-500" />
             <span>3D Globe</span>
           </button>
         </div>

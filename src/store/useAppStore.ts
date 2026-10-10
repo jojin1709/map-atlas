@@ -136,6 +136,10 @@ interface AppState {
   // Selected Wikipedia Place Card
   selectedPlace: WikipediaPlaceSummary | null
   setSelectedPlace: (p: WikipediaPlaceSummary | null) => void
+
+  // Street View
+  streetViewCoord: LatLng | null
+  setStreetViewCoord: (coord: LatLng | null) => void
 }
 
 function loadPlaces(): SavedPlace[] {
@@ -329,6 +333,9 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   selectedPlace: null,
   setSelectedPlace: p => set({ selectedPlace: p }),
+
+  streetViewCoord: null,
+  setStreetViewCoord: coord => set({ streetViewCoord: coord }),
 
   contextMenu: { visible: false, x: 0, y: 0, latlng: { lat: 0, lng: 0 } },
   showContextMenu: (x, y, latlng) => set({ contextMenu: { visible: true, x, y, latlng } }),

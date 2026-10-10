@@ -1,6 +1,6 @@
 import { useAppStore } from '../store/useAppStore'
 import { getEngine } from '../services/mapRef'
-import { X, ExternalLink, Navigation, Bookmark } from 'lucide-react'
+import { X, ExternalLink, Navigation, Bookmark, Camera } from 'lucide-react'
 
 export default function PlaceCard() {
   const selectedPlace = useAppStore(s => s.selectedPlace)
@@ -9,9 +9,9 @@ export default function PlaceCard() {
   if (!selectedPlace) return null
 
   return (
-    <div className="absolute bottom-6 right-4 z-30 w-80 max-w-[calc(100vw-2rem)] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
+    <div className="absolute bottom-6 right-4 z-30 w-80 max-w-[calc(100vw-2rem)] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-200 dark:border-zinc-800 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
       {selectedPlace.thumbnail && (
-        <div className="w-full h-36 overflow-hidden relative bg-gray-100 dark:bg-gray-800">
+        <div className="w-full h-36 overflow-hidden relative bg-gray-100 dark:bg-zinc-800">
           <img
             src={selectedPlace.thumbnail}
             alt={selectedPlace.title}
@@ -67,6 +67,24 @@ export default function PlaceCard() {
             <button
               onClick={() => {
                 if (selectedPlace.lat != null && selectedPlace.lng != null) {
+                  useAppStore.getState().setStreetViewCoord({
+                    lat: selectedPlace.lat,
+                    lng: selectedPlace.lng,
+                  })
+                }
+              }}
+              className="py-1.5 px-2.5 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-800 dark:text-gray-200 text-xs rounded-lg transition flex items-center gap-1"
+              title="Open Street View 360° panorama"
+            >
+              <Camera className="w-3.5 h-3.5 text-sky-500" />
+              <span>Street View</span>
+            </button>
+          )}
+
+          {selectedPlace.lat != null && selectedPlace.lng != null && (
+            <button
+              onClick={() => {
+                if (selectedPlace.lat != null && selectedPlace.lng != null) {
                   useAppStore.getState().addPlace({
                     id: Date.now(),
                     name: selectedPlace.title,
@@ -76,7 +94,7 @@ export default function PlaceCard() {
                   useAppStore.getState().showToast(`Saved "${selectedPlace.title}"`)
                 }
               }}
-              className="py-1.5 px-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs rounded-lg transition flex items-center gap-1.5"
+              className="py-1.5 px-2.5 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-800 dark:text-gray-200 text-xs rounded-lg transition flex items-center gap-1"
             >
               <Bookmark className="w-3.5 h-3.5 text-amber-500" />
               <span>Save</span>

@@ -117,11 +117,11 @@ export default function SearchPanel() {
             />
             {/* Autocomplete dropdown */}
             {showSuggestions && suggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-b-lg shadow-lg max-h-48 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 z-50 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-b-lg shadow-xl max-h-48 overflow-y-auto mt-0.5">
                 {suggestions.map((s, i) => (
                   <button
                     key={i}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-0 truncate"
+                    className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-zinc-700/70 border-b border-gray-100 dark:border-zinc-700/60 last:border-0 truncate"
                     onClick={() => pickSuggestion(s.label, s.lat, s.lng)}
                   >
                     {s.label}

@@ -15,12 +15,11 @@ export interface HeatmapOptions {
 }
 
 const DEFAULT_GRADIENT: Record<number, string> = {
-  0.0: 'blue',
-  0.2: 'cyan',
-  0.4: 'lime',
-  0.6: 'yellow',
-  0.8: 'orange',
-  1.0: 'red',
+  0.0: 'rgba(239, 68, 68, 0.75)',    // Hot center
+  0.25: 'rgba(249, 115, 22, 0.55)',  // Warm amber
+  0.55: 'rgba(168, 85, 247, 0.35)',  // Violet mid
+  0.8: 'rgba(59, 130, 246, 0.18)',   // Soft blue edge
+  1.0: 'rgba(59, 130, 246, 0)',      // Smooth transparent fade
 }
 
 export class HeatmapOverlay {

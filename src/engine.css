@@ -139,9 +139,9 @@
   z-index: 20;
 }
 .dark .me-popup {
-  background: #1f2937;
-  color: #e5e7eb;
-  border: 1px solid #374151;
+  background: #18181b;
+  color: #f4f4f5;
+  border: 1px solid #27272a;
 }
 .me-popup::after {
   content: '';
@@ -153,7 +153,7 @@
   border-right: 8px solid transparent;
   border-top: 8px solid white;
 }
-.dark .me-popup::after { border-top-color: #1f2937; }
+.dark .me-popup::after { border-top-color: #18181b; }
 .me-popup-close {
   position: absolute;
   top: 4px;

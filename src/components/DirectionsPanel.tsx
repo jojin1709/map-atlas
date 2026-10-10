@@ -1,18 +1,24 @@
-/* Directions panel: routing with waypoints, alternatives, turn-by-turn, elevation profile. */
-
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import * as api from '../services/api'
 import { CONFIG } from '../config'
 import { formatDistance, formatDuration, parseLatLng } from '../services/geo'
 import ElevationChart from './ElevationChart'
-import type { LatLng } from '../types'
-import { Navigation, ArrowUpDown, TrendingUp, Sparkles } from 'lucide-react'
+import type { LatLng, GeocodeResult } from '../types'
+import { Navigation, ArrowUpDown, TrendingUp, Sparkles, MapPin } from 'lucide-react'
 
 export default function DirectionsPanel() {
   const [fromText, setFromText] = useState('')
   const [toText, setToText] = useState('')
   const [showElev, setShowElev] = useState(false)
+  const [fromSuggestions, setFromSuggestions] = useState<GeocodeResult[]>([])
+  const [toSuggestions, setToSuggestions] = useState<GeocodeResult[]>([])
+  const [showFromSug, setShowFromSug] = useState(false)
+  const [showToSug, setShowToSug] = useState(false)
+  const fromDebounce = useRef<ReturnType<typeof setTimeout>>()
+  const toDebounce = useRef<ReturnType<typeof setTimeout>>()
+  const fromContainerRef = useRef<HTMLDivElement>(null)
+  const toContainerRef = useRef<HTMLDivElement>(null)
 
   const from = useAppStore(s => s.from)
   const to = useAppStore(s => s.to)
@@ -21,6 +27,58 @@ export default function DirectionsPanel() {
   const routeIndex = useAppStore(s => s.routeIndex)
   const routingProfile = useAppStore(s => s.routingProfile)
   const dirStatus = useAppStore(s => s.dirStatus)
+
+  // Live autocomplete for "From"
+  useEffect(() => {
+    clearTimeout(fromDebounce.current)
+    const q = fromText.trim()
+    if (q.length < 2 || from) {
+      setFromSuggestions([])
+      setShowFromSug(false)
+      return
+    }
+    fromDebounce.current = setTimeout(async () => {
+      try {
+        const items = await api.geocode(q)
+        setFromSuggestions(items)
+        setShowFromSug(items.length > 0)
+      } catch {
+        setFromSuggestions([])
+      }
+    }, 300)
+    return () => clearTimeout(fromDebounce.current)
+  }, [fromText, from])
+
+  // Live autocomplete for "To"
+  useEffect(() => {
+    clearTimeout(toDebounce.current)
+    const q = toText.trim()
+    if (q.length < 2 || to) {
+      setToSuggestions([])
+      setShowToSug(false)
+      return
+    }
+    toDebounce.current = setTimeout(async () => {
+      try {
+        const items = await api.geocode(q)
+        setToSuggestions(items)
+        setShowToSug(items.length > 0)
+      } catch {
+        setToSuggestions([])
+      }
+    }, 300)
+    return () => clearTimeout(toDebounce.current)
+  }, [toText, to])
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (!fromContainerRef.current?.contains(e.target as Node)) setShowFromSug(false)
+      if (!toContainerRef.current?.contains(e.target as Node)) setShowToSug(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   const resolvePoint = async (text: string, point: LatLng | null) => {
     if (point) return point
@@ -33,6 +91,8 @@ export default function DirectionsPanel() {
   }
 
   const getRoute = async () => {
+    setShowFromSug(false)
+    setShowToSug(false)
     const store = useAppStore.getState()
     store.setDirStatus('Routing…')
     try {
@@ -96,23 +156,74 @@ export default function DirectionsPanel() {
   return (
     <section>
       <h2>Directions</h2>
-      <input
-        value={from ? `${from.lat.toFixed(5)}, ${from.lng.toFixed(5)}` : fromText}
-        onChange={e => {
-          setFromText(e.target.value)
-          useAppStore.getState().setFrom(null)
-        }}
-        placeholder="From: address, lat,lng, or click map"
-      />
-      <input
-        value={to ? `${to.lat.toFixed(5)}, ${to.lng.toFixed(5)}` : toText}
-        onChange={e => {
-          setToText(e.target.value)
-          useAppStore.getState().setTo(null)
-        }}
-        placeholder="To: address, lat,lng, or click map"
-        className="mt-1"
-      />
+
+      {/* From Input with Autocomplete */}
+      <div ref={fromContainerRef} className="relative">
+        <input
+          value={from ? `${from.lat.toFixed(5)}, ${from.lng.toFixed(5)}` : fromText}
+          onChange={e => {
+            setFromText(e.target.value)
+            useAppStore.getState().setFrom(null)
+          }}
+          onFocus={() => {
+            if (fromSuggestions.length > 0) setShowFromSug(true)
+          }}
+          placeholder="From: address, lat,lng, or click map"
+        />
+        {showFromSug && fromSuggestions.length > 0 && (
+          <div className="absolute top-full left-0 right-0 z-50 bg-white dark:bg-zinc-850 border border-gray-200 dark:border-zinc-700 rounded-b-lg shadow-xl max-h-48 overflow-y-auto mt-0.5">
+            {fromSuggestions.map((s, i) => (
+              <button
+                key={i}
+                type="button"
+                className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-zinc-750 border-b border-gray-100 dark:border-zinc-800 last:border-0 truncate flex items-center gap-1.5"
+                onClick={() => {
+                  setFromText(s.label)
+                  useAppStore.getState().setFrom({ lat: s.lat, lng: s.lng })
+                  setShowFromSug(false)
+                }}
+              >
+                <MapPin className="w-3 h-3 text-emerald-500 shrink-0" />
+                <span className="truncate">{s.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* To Input with Autocomplete */}
+      <div ref={toContainerRef} className="relative mt-1">
+        <input
+          value={to ? `${to.lat.toFixed(5)}, ${to.lng.toFixed(5)}` : toText}
+          onChange={e => {
+            setToText(e.target.value)
+            useAppStore.getState().setTo(null)
+          }}
+          onFocus={() => {
+            if (toSuggestions.length > 0) setShowToSug(true)
+          }}
+          placeholder="To: address, lat,lng, or click map"
+        />
+        {showToSug && toSuggestions.length > 0 && (
+          <div className="absolute top-full left-0 right-0 z-50 bg-white dark:bg-zinc-850 border border-gray-200 dark:border-zinc-700 rounded-b-lg shadow-xl max-h-48 overflow-y-auto mt-0.5">
+            {toSuggestions.map((s, i) => (
+              <button
+                key={i}
+                type="button"
+                className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-zinc-750 border-b border-gray-100 dark:border-zinc-800 last:border-0 truncate flex items-center gap-1.5"
+                onClick={() => {
+                  setToText(s.label)
+                  useAppStore.getState().setTo({ lat: s.lat, lng: s.lng })
+                  setShowToSug(false)
+                }}
+              >
+                <MapPin className="w-3 h-3 text-red-500 shrink-0" />
+                <span className="truncate">{s.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {waypoints.length > 0 && (
         <div className="mt-1 space-y-1">

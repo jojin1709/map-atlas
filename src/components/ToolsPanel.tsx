@@ -26,12 +26,15 @@ import {
   Minimize2,
   Printer,
   Target,
+  Camera,
+  Loader2,
 } from 'lucide-react'
 
 export default function ToolsPanel() {
   const [weatherInfo, setWeatherInfo] = useState('')
   const [weatherLoading, setWeatherLoading] = useState(false)
   const [heatmapOn, setHeatmapOn] = useState(false)
+  const [locating, setLocating] = useState(false)
 
   const style = useAppStore(s => s.style)
   const dark = useAppStore(s => s.dark)
@@ -55,9 +58,8 @@ export default function ToolsPanel() {
     setWeatherInfo('Fetching weather…')
     try {
       const w = await api.weather(c.lat, c.lng)
-      const emoji = api.weatherCodeToEmoji(0)
       setWeatherInfo(
-        `${emoji} ${w.temperature}${w.tempUnit}, wind ${w.wind} ${w.windUnit} at ${coordsDMS(c.lat, c.lng)}`
+        `${w.temperature}${w.tempUnit}, wind ${w.wind} ${w.windUnit} at ${coordsDMS(c.lat, c.lng)}`
       )
     } catch (err) {
       setWeatherInfo(err instanceof Error ? err.message : 'Weather failed')
@@ -88,21 +90,30 @@ export default function ToolsPanel() {
     setHeatmapOn(true)
   }
 
-  const locate = () => {
-    if (!navigator.geolocation) {
-      useAppStore.getState().showToast('Geolocation not supported')
-      return
-    }
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        const p = { lat: pos.coords.latitude, lng: pos.coords.longitude }
-        useAppStore.getState().setUserLocation(p)
+  const locate = async () => {
+    setLocating(true)
+    useAppStore.getState().showToast('Locating your position…')
+    try {
+      const pos = await api.locateUser()
+      const p = { lat: pos.lat, lng: pos.lng }
+      const store = useAppStore.getState()
+      store.setUserLocation(p)
+
+      // If in 3D globe mode, seamlessly transition to 2D flat map for high-precision view
+      if (store.globeMode) {
+        store.setGlobeMode(false)
+      }
+
+      setTimeout(() => {
         getEngine()?.flyTo(p.lat, p.lng, 15)
-        useAppStore.getState().showToast('Location found')
-      },
-      () => useAppStore.getState().showToast('Location permission denied'),
-      { enableHighAccuracy: true }
-    )
+      }, 100)
+
+      store.showToast(pos.city ? `Location: ${pos.city}` : `Location: ${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}`)
+    } catch (err) {
+      useAppStore.getState().showToast(err instanceof Error ? err.message : 'Location detection failed')
+    } finally {
+      setLocating(false)
+    }
   }
 
   const share = async () => {
@@ -307,13 +318,39 @@ export default function ToolsPanel() {
           <Flame className="w-4 h-4 text-orange-500" />
         </button>
       </div>
-      {weatherInfo && <div className="muted text-xs mt-1">{weatherInfo}</div>}
+      {weatherInfo && (
+        <div className="muted text-xs mt-1.5 flex items-center gap-1.5 bg-gray-50 dark:bg-zinc-800/50 p-1.5 rounded-lg border border-gray-100 dark:border-zinc-800">
+          <CloudSun className="w-4 h-4 text-amber-500 shrink-0" />
+          <span className="truncate">{weatherInfo}</span>
+        </div>
+      )}
 
-      {/* Geolocation + Track */}
+      {/* Geolocation + Street View + Track */}
       <div className="flex gap-1.5 mt-2 flex-wrap">
-        <button onClick={locate} className="ghost flex items-center gap-1.5">
-          <Crosshair className="w-3.5 h-3.5 text-emerald-500" />
-          <span>Locate me</span>
+        <button
+          onClick={locate}
+          disabled={locating}
+          className="ghost flex items-center gap-1.5"
+          title="Find your current location instantly"
+        >
+          {locating ? (
+            <Loader2 className="w-3.5 h-3.5 text-emerald-500 animate-spin" />
+          ) : (
+            <Crosshair className="w-3.5 h-3.5 text-emerald-500" />
+          )}
+          <span>{locating ? 'Locating…' : 'Locate me'}</span>
+        </button>
+        <button
+          onClick={() => {
+            const engine = getEngine()
+            const c = engine ? engine.getCenter() : (userLocation || { lat: 0, lng: 0 })
+            useAppStore.getState().setStreetViewCoord(c)
+          }}
+          className="ghost flex items-center gap-1.5"
+          title="Open Street View 360° panorama at map center"
+        >
+          <Camera className="w-3.5 h-3.5 text-sky-500" />
+          <span>Street View</span>
         </button>
         <button onClick={toggleTrack} className={`flex items-center gap-1.5 ${recording ? 'active' : 'ghost'}`}>
           {recording ? (
@@ -335,9 +372,13 @@ export default function ToolsPanel() {
         </div>
       )}
       {userLocation && (
-        <div className="muted text-xs mt-1 flex items-center gap-1">
-          <Crosshair className="w-3 h-3 text-blue-500" />
-          <span>{userLocation.lat.toFixed(5)}, {userLocation.lng.toFixed(5)}</span>
+        <div
+          onClick={() => getEngine()?.flyTo(userLocation.lat, userLocation.lng, 15)}
+          className="muted text-xs mt-1.5 flex items-center gap-1.5 cursor-pointer hover:text-blue-500 transition"
+          title="Click to jump to your location"
+        >
+          <Crosshair className="w-3.5 h-3.5 text-blue-500" />
+          <span>My location: {userLocation.lat.toFixed(5)}, {userLocation.lng.toFixed(5)}</span>
         </div>
       )}
 

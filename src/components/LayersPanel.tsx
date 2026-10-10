@@ -44,7 +44,7 @@ export default function LayersPanel() {
       <div className="flex items-center justify-between mb-2">
         <h2 className="mb-0">Layers & View</h2>
       </div>
-      <div className="mb-3 p-2 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60">
+      <div className="mb-3 p-2 rounded-lg bg-gray-50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-700/60">
         <label className="flex items-center justify-between cursor-pointer">
           <div className="flex items-center gap-2.5">
             <Globe className="w-5 h-5 text-blue-600 dark:text-blue-400" />

@@ -11,6 +11,7 @@ import ContextMenu from './ContextMenu'
 import Toast from './Toast'
 import NavOverlay from './NavOverlay'
 import PlaceCard from './PlaceCard'
+import StreetViewModal from './StreetViewModal'
 import { Menu, X } from 'lucide-react'
 
 function isEmbedMode(): boolean {
@@ -35,6 +36,7 @@ export default function Layout() {
         <NavOverlay />
         <ContextMenu />
         <Toast />
+        <StreetViewModal />
       </div>
     )
   }
@@ -66,6 +68,7 @@ export default function Layout() {
 
       <ContextMenu />
       <PlaceCard />
+      <StreetViewModal />
     </div>
   )
 }

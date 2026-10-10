@@ -9,17 +9,109 @@ async function json<T>(url: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
-/* ---- Nominatim ---- */
+/* ---- Geocoding (Nominatim with Photon typo fallback) ---- */
+
+export async function geocodePhoton(query: string): Promise<GeocodeResult[]> {
+  try {
+    const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=6`)
+    if (!res.ok) return []
+    const data = await res.json()
+    if (!data.features) return []
+    return data.features.map((f: any) => {
+      const p = f.properties || {}
+      const parts = [p.name, p.city || p.county, p.state, p.country].filter(Boolean)
+      const label = parts.length > 0 ? Array.from(new Set(parts)).join(', ') : p.name || 'Location'
+      return {
+        label,
+        lat: f.geometry.coordinates[1],
+        lng: f.geometry.coordinates[0],
+        category: p.osm_value || p.type || 'place',
+      }
+    })
+  } catch {
+    return []
+  }
+}
 
 export async function geocode(query: string): Promise<GeocodeResult[]> {
-  const url = `${CONFIG.nominatimUrl}/search?format=jsonv2&limit=6&q=${encodeURIComponent(query)}`
-  const list = await json<Array<{ display_name: string; lat: string; lon: string; type?: string }>>(url)
-  return list.map(p => ({
-    label: p.display_name,
-    lat: parseFloat(p.lat),
-    lng: parseFloat(p.lon),
-    category: p.type,
-  }))
+  const trimmed = query.trim()
+  if (!trimmed) return []
+
+  try {
+    const url = `${CONFIG.nominatimUrl}/search?format=jsonv2&limit=6&q=${encodeURIComponent(trimmed)}`
+    const list = await json<Array<{ display_name: string; lat: string; lon: string; type?: string }>>(url)
+    if (list && list.length > 0) {
+      return list.map(p => ({
+        label: p.display_name,
+        lat: parseFloat(p.lat),
+        lng: parseFloat(p.lon),
+        category: p.type,
+      }))
+    }
+  } catch {
+    // Nominatim failed or rate-limited; fallback to Photon
+  }
+
+  // Fallback to Photon for typo tolerance (e.g. "thrisuur" -> "Thrissur")
+  return geocodePhoton(trimmed)
+}
+
+/* ---- Fast Geolocation with IP Fallback ---- */
+
+export async function locateUser(): Promise<{ lat: number; lng: number; city?: string }> {
+  // 1. Rapid browser geolocation attempt (cached or quick wifi lookup)
+  if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: false,
+          timeout: 3500,
+          maximumAge: 300000,
+        })
+      })
+      return {
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+      }
+    } catch {
+      // Timed out or permission blocked; proceed to fast IP geolocation
+    }
+  }
+
+  // 2. High-speed IP Geolocation fallback (~150ms)
+  try {
+    const res = await fetch('https://get.geojs.io/v1/ip/geo.json')
+    if (res.ok) {
+      const data = await res.json()
+      if (data.latitude && data.longitude) {
+        return {
+          lat: parseFloat(data.latitude),
+          lng: parseFloat(data.longitude),
+          city: [data.city, data.country].filter(Boolean).join(', '),
+        }
+      }
+    }
+  } catch {
+    // Try secondary IP lookup
+  }
+
+  try {
+    const res = await fetch('https://ipwho.is/')
+    if (res.ok) {
+      const data = await res.json()
+      if (data.success && data.latitude && data.longitude) {
+        return {
+          lat: data.latitude,
+          lng: data.longitude,
+          city: [data.city, data.country].filter(Boolean).join(', '),
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  throw new Error('Could not detect location. Please check browser permissions.')
 }
 
 export async function reverse(lat: number, lng: number): Promise<string> {
