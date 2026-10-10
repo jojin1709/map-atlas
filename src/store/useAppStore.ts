@@ -13,6 +13,7 @@ export interface LayerVisibility {
   userLocation: boolean
   places: boolean
   earthquakes: boolean
+  traffic: boolean
 }
 
 export interface ContextMenuState {
@@ -151,6 +152,17 @@ interface AppState {
   // Street View
   streetViewCoord: LatLng | null
   setStreetViewCoord: (coord: LatLng | null) => void
+
+  // Compass / Device Orientation
+  compassActive: boolean
+  compassHeading: number | null
+  setCompassActive: (active: boolean) => void
+  setCompassHeading: (heading: number | null) => void
+  toggleCompass: () => void
+
+  // Offline Area Manager Modal
+  offlineManagerOpen: boolean
+  setOfflineManagerOpen: (open: boolean) => void
 }
 
 function loadPlaces(): SavedPlace[] {
@@ -327,6 +339,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     userLocation: true,
     places: true,
     earthquakes: false,
+    traffic: false,
   },
   toggleLayer: key => {
     const next = !get().layers[key]
@@ -372,4 +385,13 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   fullscreen: false,
   toggleFullscreen: () => set(s => ({ fullscreen: !s.fullscreen })),
+
+  compassActive: false,
+  compassHeading: null,
+  setCompassActive: active => set({ compassActive: active }),
+  setCompassHeading: heading => set({ compassHeading: heading }),
+  toggleCompass: () => set(s => ({ compassActive: !s.compassActive })),
+
+  offlineManagerOpen: false,
+  setOfflineManagerOpen: open => set({ offlineManagerOpen: open }),
 }))

@@ -14,6 +14,7 @@ import Toast from './Toast'
 import NavOverlay from './NavOverlay'
 import PlaceCard from './PlaceCard'
 import StreetViewModal from './StreetViewModal'
+import OfflineManagerModal from './OfflineManagerModal'
 import {
   Menu,
   X,
@@ -285,6 +286,7 @@ export default function Layout() {
       <ContextMenu />
       <PlaceCard />
       <StreetViewModal />
+      <OfflineManagerModal />
     </div>
   )
 }

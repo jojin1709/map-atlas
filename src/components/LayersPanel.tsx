@@ -13,6 +13,7 @@ import {
   Crosshair,
   Bookmark,
   Activity,
+  Car,
 } from 'lucide-react'
 
 interface LayerMeta {
@@ -24,6 +25,7 @@ interface LayerMeta {
 const LAYER_CONFIG: Record<keyof LayerVisibility, LayerMeta> = {
   routes: { label: 'Routes', icon: Route, color: 'text-blue-500' },
   pins: { label: 'Start/Destination pins', icon: MapPin, color: 'text-emerald-500' },
+  traffic: { label: 'Live Traffic Flow', icon: Car, color: 'text-amber-500' },
   searchResults: { label: 'Search results', icon: Search, color: 'text-rose-500' },
   shapes: { label: 'Drawn shapes', icon: PenLine, color: 'text-amber-500' },
   measure: { label: 'Measurements', icon: Ruler, color: 'text-purple-500' },

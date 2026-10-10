@@ -179,3 +179,26 @@ export async function downloadAreaOffline(
 
   return completed
 }
+
+/** Get count and approximate storage used by cached offline tiles. */
+export async function getOfflineStorageUsage(): Promise<{ count: number; approxMB: number }> {
+  if (!('caches' in window)) return { count: 0, approxMB: 0 }
+  try {
+    const cache = await caches.open(TILE_CACHE_NAME)
+    const keys = await cache.keys()
+    const approxMB = Number(((keys.length * 20) / 1024).toFixed(1))
+    return { count: keys.length, approxMB }
+  } catch {
+    return { count: 0, approxMB: 0 }
+  }
+}
+
+/** Clear all cached offline map tiles. */
+export async function clearOfflineTiles(): Promise<void> {
+  if (!('caches' in window)) return
+  try {
+    await caches.delete(TILE_CACHE_NAME)
+  } catch {
+    // ignore
+  }
+}

@@ -48,6 +48,7 @@ export default function NavOverlay() {
   const voiceEnabled = useAppStore(s => s.voiceNavEnabled)
   const toggleVoice = useAppStore(s => s.toggleVoiceNav)
   const setUserLocation = useAppStore(s => s.setUserLocation)
+  const layers = useAppStore(s => s.layers)
 
   const watchIdRef = useRef<number | null>(null)
   const lastSpokenRef = useRef<number>(-1)
@@ -268,10 +269,18 @@ export default function NavOverlay() {
             <div className="text-xl sm:text-2xl font-black text-gray-900 dark:text-gray-100 leading-none">
               {etaString}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate mt-1">
+            <div className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate mt-1 flex items-center gap-1.5">
               <span>{formatDuration(remainingDurationSec)}</span>
-              <span className="mx-1">·</span>
+              <span>·</span>
               <span>{formatDistance(remainingDistance)}</span>
+              {layers.traffic && (
+                <>
+                  <span>·</span>
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-md">
+                    Fast Traffic
+                  </span>
+                </>
+              )}
             </div>
           </div>
 
