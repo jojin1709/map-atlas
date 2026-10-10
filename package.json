@@ -1,6 +1,6 @@
 {
   "name": "map-atlas",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Custom dependency-free slippy map engine with React wrapper, routing, geocoding, and more.",
   "type": "module",
   "main": "./dist/map-atlas.cjs",
@@ -51,7 +51,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jojin1709/map-atlas.git"
+    "url": "git+https://github.com/jojin1709/map-atlas.git"
   },
   "homepage": "https://github.com/jojin1709/map-atlas#readme",
   "bugs": {
