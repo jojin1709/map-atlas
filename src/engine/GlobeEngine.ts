@@ -13,7 +13,6 @@
 import * as THREE from 'three'
 import type { LatLng } from '../types'
 import { TILE_STYLES } from '../tileStyles'
-import { ATMOSPHERE_VERTEX_SHADER, ATMOSPHERE_FRAGMENT_SHADER } from '../shaders'
 
 export interface CountryLabelData {
   name: string
@@ -94,7 +93,6 @@ export class GlobeEngine {
   private camera: THREE.PerspectiveCamera
   private globeGroup: THREE.Group
   private earthMesh: THREE.Mesh
-  private atmosphereMesh: THREE.Mesh
   private overlayEl: HTMLElement
 
   private textureCanvas: HTMLCanvasElement
@@ -201,19 +199,6 @@ export class GlobeEngine {
     })
     this.earthMesh = new THREE.Mesh(sphereGeom, earthMat)
     this.globeGroup.add(this.earthMesh)
-
-    // Atmospheric Glow Mesh (GLSL Shaders)
-    const atmGeom = new THREE.SphereGeometry(1.025, 48, 48)
-    const atmMat = new THREE.ShaderMaterial({
-      vertexShader: ATMOSPHERE_VERTEX_SHADER,
-      fragmentShader: ATMOSPHERE_FRAGMENT_SHADER,
-      blending: THREE.AdditiveBlending,
-      side: THREE.BackSide,
-      transparent: true,
-      depthWrite: false,
-    })
-    this.atmosphereMesh = new THREE.Mesh(atmGeom, atmMat)
-    this.scene.add(this.atmosphereMesh)
 
     // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.9)
