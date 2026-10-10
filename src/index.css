@@ -188,22 +188,23 @@ body { font-family: system-ui, -apple-system, sans-serif; }
 }
 
 #panel {
-  width: 340px;
-  min-width: 340px;
+  width: 360px;
+  min-width: 360px;
   height: 100%;
   background: white;
   border-left: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: transform 0.25s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 30;
-  box-shadow: -2px 0 12px rgba(0,0,0,0.06);
+  box-shadow: -4px 0 20px rgba(0,0,0,0.06);
 }
 .dark #panel {
   background: #121214;
   border-left-color: #27272a;
   color: #f4f4f5;
+  box-shadow: -4px 0 20px rgba(0,0,0,0.4);
 }
 
 .panel-closed #panel {
@@ -479,33 +480,33 @@ button:disabled {
   }
 
   .hamburger {
-    display: flex;
+    display: none !important;
   }
 
   #panel {
     position: fixed;
-    bottom: 52px;
+    bottom: 54px;
     left: 0;
     right: 0;
     width: 100%;
     min-width: unset;
-    height: 52vh;
-    max-height: 72vh;
+    height: 54vh;
+    max-height: 78vh;
     border-left: none;
     border-top: 1px solid #e5e7eb;
-    border-radius: 20px 20px 0 0;
-    box-shadow: 0 -8px 30px rgba(0,0,0,0.18);
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -10px 35px rgba(0,0,0,0.22);
     transform: translateY(0);
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 45;
   }
   .dark #panel {
     border-top-color: #27272a;
-    box-shadow: 0 -8px 30px rgba(0,0,0,0.55);
+    box-shadow: 0 -10px 35px rgba(0,0,0,0.6);
   }
 
   .panel-closed #panel {
-    transform: translateY(calc(100% + 60px));
+    transform: translateY(calc(100% + 75px));
     position: fixed;
   }
 

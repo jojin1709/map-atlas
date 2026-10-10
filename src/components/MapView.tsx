@@ -855,17 +855,17 @@ export default function MapView() {
           </div>
         </div>
       ) : (
-        <div className="absolute top-3 right-14 sm:right-16 z-10 flex items-center gap-1.5 sm:gap-2">
+        <div className="absolute top-3 right-14 sm:right-16 z-10 flex items-center bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/80 dark:border-zinc-800/80 p-1 gap-0.5">
           {/* Compass / Orientation */}
           <button
             onClick={() => {
               toggleCompass()
               useAppStore.getState().showToast(compassActive ? 'Compass disabled' : 'Phone Compass sensor enabled')
             }}
-            className={`p-2 sm:px-3 sm:py-2 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-xl shadow-md border font-semibold text-xs flex items-center gap-1.5 hover:scale-105 active:scale-95 transition ${
+            className={`p-2 sm:px-2.5 sm:py-1.5 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition ${
               compassActive
-                ? 'text-blue-600 dark:text-blue-400 border-blue-400 dark:border-blue-700 bg-blue-50/70 dark:bg-blue-950/70'
-                : 'text-gray-700 dark:text-gray-200 border-gray-200 dark:border-zinc-800'
+                ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold'
+                : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
             }`}
             title={compassActive ? `Heading: ${compassHeading ?? 0}° - Click to disable` : 'Enable real-time Compass orientation'}
           >
@@ -873,7 +873,7 @@ export default function MapView() {
               className="w-4 h-4 transition-transform duration-200"
               style={{ transform: compassHeading !== null ? `rotate(${compassHeading}deg)` : 'none' }}
             />
-            <span className="hidden sm:inline">
+            <span className="hidden xl:inline">
               {compassHeading !== null ? `${compassHeading}°` : 'Compass'}
             </span>
           </button>
@@ -884,49 +884,54 @@ export default function MapView() {
               toggleLayer('traffic')
               useAppStore.getState().showToast(!layers.traffic ? 'Live traffic flow overlay enabled' : 'Traffic flow hidden')
             }}
-            className={`p-2 sm:px-3 sm:py-2 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-xl shadow-md border font-semibold text-xs flex items-center gap-1.5 hover:scale-105 active:scale-95 transition ${
+            className={`p-2 sm:px-2.5 sm:py-1.5 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition ${
               layers.traffic
-                ? 'text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700 bg-amber-50/70 dark:bg-amber-950/70'
-                : 'text-gray-700 dark:text-gray-200 border-gray-200 dark:border-zinc-800'
+                ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 font-bold'
+                : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
             }`}
             title={layers.traffic ? 'Hide Traffic Flow' : 'Show Live Traffic Flow'}
           >
             <Car className="w-4 h-4 text-amber-500" />
-            <span className="hidden sm:inline">Traffic</span>
+            <span className="hidden xl:inline">Traffic</span>
           </button>
 
           {/* Offline Manager */}
           <button
             onClick={() => setOfflineManagerOpen(true)}
-            className="p-2 sm:px-3 sm:py-2 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-xl shadow-md border border-gray-200 dark:border-zinc-800 font-semibold text-xs text-gray-700 dark:text-gray-200 flex items-center gap-1.5 hover:scale-105 active:scale-95 transition"
+            className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl font-semibold text-xs text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center gap-1.5 transition"
             title="Download offline maps"
           >
             <CloudDownload className="w-4 h-4 text-emerald-500" />
-            <span className="hidden sm:inline">Offline</span>
+            <span className="hidden xl:inline">Offline</span>
           </button>
 
+          <div className="w-px h-5 bg-gray-200 dark:bg-zinc-800 mx-0.5" />
+
+          {/* Street View */}
           <button
             onClick={() => {
               const engine = engineRef.current
               const c = engine ? engine.getCenter() : (userLocation || { lat: 0, lng: 0 })
               useAppStore.getState().setStreetViewCoord(c)
             }}
-            className="p-2 sm:px-3.5 sm:py-2 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-xl shadow-md border border-gray-200 dark:border-zinc-800 font-semibold text-xs text-gray-800 dark:text-gray-100 flex items-center gap-1.5 hover:scale-105 active:scale-95 transition"
+            className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl font-semibold text-xs text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center gap-1.5 transition"
             title="Open 360° Street View at current center"
           >
             <Camera className="w-4 h-4 text-sky-500" />
-            <span className="hidden sm:inline">Street View</span>
+            <span className="hidden xl:inline">Street View</span>
           </button>
+
+          {/* 3D Globe */}
           <button
             onClick={() => {
               setGlobeMode(true)
               useAppStore.getState().showToast('Switched to 3D Globe view')
             }}
-            className="p-2 sm:px-3.5 sm:py-2 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-xl shadow-md border border-gray-200 dark:border-zinc-800 font-semibold text-xs text-gray-800 dark:text-gray-100 flex items-center gap-1.5 hover:scale-105 active:scale-95 transition"
+            className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl font-semibold text-xs text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center gap-1.5 transition"
             title="Switch to 3D Globe"
           >
             <GlobeIcon className="w-4 h-4 text-blue-500" />
-            <span className="hidden sm:inline">3D Globe</span>
+            <span className="hidden xl:inline">3D Globe</span>
           </button>
         </div>
       )}

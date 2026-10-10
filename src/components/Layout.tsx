@@ -118,14 +118,17 @@ export default function Layout() {
 
   return (
     <div className={`app-layout ${panelOpen ? '' : 'panel-closed'} ${dark ? 'dark' : ''}`}>
-      {/* Desktop Hamburger (hidden on mobile) */}
-      <button
-        className="hamburger hidden sm:flex items-center justify-center"
-        onClick={togglePanel}
-        title="Toggle panel"
-      >
-        {panelOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-      </button>
+      {/* Floating desktop panel reopen button when panel is closed */}
+      {!panelOpen && (
+        <button
+          onClick={togglePanel}
+          className="hidden sm:flex fixed top-3 right-3 z-30 px-3.5 py-2 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200 dark:border-zinc-800 text-gray-800 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 items-center gap-2 font-bold text-xs hover:scale-105 active:scale-95 transition"
+          title="Open side panel"
+        >
+          <Menu className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          <span>Explore</span>
+        </button>
+      )}
 
       {/* Floating Locate Me button on mobile when sheet is closed */}
       {!panelOpen && (
@@ -194,15 +197,28 @@ export default function Layout() {
             <span id="coords-display" className="coords hidden sm:block" />
           </div>
 
-          {/* Mobile minimize button */}
-          <button
-            type="button"
-            onClick={closePanel}
-            className="sm:hidden p-1.5 text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100 rounded-lg border-0 bg-transparent"
-            title="Minimize to map"
-          >
-            <ChevronDown className="w-5 h-5" />
-          </button>
+          {/* Header Action Buttons */}
+          <div className="flex items-center gap-1">
+            {/* Desktop close button */}
+            <button
+              type="button"
+              onClick={closePanel}
+              className="hidden sm:flex p-1.5 text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-800 transition"
+              title="Close sidebar"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Mobile minimize button */}
+            <button
+              type="button"
+              onClick={closePanel}
+              className="sm:hidden p-1.5 text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100 rounded-lg border-0 bg-transparent"
+              title="Minimize to map"
+            >
+              <ChevronDown className="w-5 h-5" />
+            </button>
+          </div>
         </header>
 
         {/* Desktop Segmented Tab Switcher */}
