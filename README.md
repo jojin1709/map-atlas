@@ -4,7 +4,7 @@
 
 # Map Atlas
 
-**A modern, open-source web map with a custom dependency-free engine.**
+**A modern, dependency-free web map engine and full-featured interactive atlas.**
 
 No Leaflet. No Mapbox. No Google Maps. Just TypeScript, React, and pure engineering.
 
@@ -15,9 +15,22 @@ No Leaflet. No Mapbox. No Google Maps. Just TypeScript, React, and pure engineer
 [![PWA](https://img.shields.io/badge/PWA-Installable-blue?logo=pwa&logoColor=white)](https://mapapp-lovat.vercel.app)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-[Live Demo](https://mapapp-lovat.vercel.app) · [npm](https://www.npmjs.com/package/map-atlas) · [Report Bug](https://github.com/jojin1709/map-atlas/issues)
+[Live App (Vercel)](https://mapapp-lovat.vercel.app) · [Cloudflare Edge](https://map-atlas.apkscope.workers.dev) · [Interactive API Docs](https://mapapp-lovat.vercel.app/docs) · [npm](https://www.npmjs.com/package/map-atlas) · [Report Bug](https://github.com/jojin1709/map-atlas/issues)
 
 </div>
+
+---
+
+## Highlights
+
+- **Dependency-Free Map Engine** — Custom Web Mercator (EPSG:3857) engine handling raster tiles, retina scaling, inertia panning, pinch-to-zoom, SVG overlays, and popups with 0 heavy GIS libraries.
+- **3D Globe Mode** — Seamless one-click switch to an interactive Three.js 3D earth globe with atmospheric glow, continuous rotation, country labels, and coordinates mapping.
+- **Mobile First UX** — Persistent Google Maps-style top search pill, 5-tab thumb-friendly bottom navigation bar (`z-50`), device compass orientation, and auto-pan popups that never clip off-screen.
+- **Live Overlays** — Real-time RainViewer weather radar precipitation overlay, live traffic flow, and real-time USGS seismic earthquake telemetry.
+- **360° Street View** — Interactive street-level panorama modal directly from any map coordinate.
+- **Turn-by-Turn GPS HUD** — Voice-guided navigation (Web Speech API), route countdown, dynamic re-routing connector, and elevation profiles.
+- **Visual Offline Manager** — Estimate download size and cache high-res map tiles locally into IndexedDB / CacheStorage for zero-signal backcountry navigation.
+- **Comprehensive API Docs** — Complete Leaflet-style API reference and embedding manual accessible directly in-app at `/docs`.
 
 ---
 
@@ -31,7 +44,7 @@ yarn add map-atlas
 pnpm add map-atlas
 ```
 
-Peer dependencies (you likely already have them):
+Peer dependencies:
 
 ```bash
 npm install react react-dom
@@ -40,9 +53,9 @@ npm install react react-dom
 ### CDN (no build step)
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/map-atlas@1.0.1/dist/map-atlas.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/map-atlas@1.0.2/dist/styles.css" />
 <script type="module">
-  import { MapEngine } from 'https://cdn.jsdelivr.net/npm/map-atlas@1.0.1/dist/map-atlas.js'
+  import { MapEngine } from 'https://cdn.jsdelivr.net/npm/map-atlas@1.0.2/dist/map-atlas.js'
 
   const map = new MapEngine('#map', {
     center: [51.5, -0.12],
@@ -53,8 +66,6 @@ npm install react react-dom
   map.addMarker({ lat: 51.5074, lng: -0.1278 }, { label: 'London' })
 </script>
 ```
-
-> **Note:** The ESM bundle imports `react/jsx-runtime`. For vanilla JS CDN use, you can load the CJS bundle via a bundler, or use the ESM build with an import map. For production apps, `npm i map-atlas` is recommended.
 
 ---
 
@@ -68,7 +79,7 @@ import 'map-atlas/styles.css'
 
 export default function App() {
   return (
-    <div style={{ height: '100vh' }}>
+    <div style={{ height: '100vh', width: '100vw' }}>
       <MapAtlas
         center={[51.5, -0.12]}
         zoom={13}
@@ -84,7 +95,7 @@ export default function App() {
               { lat: 48.8566, lng: 2.3522 },
             ],
             color: '#1a73e8',
-            weight: 3,
+            weight: 4,
           },
         ]}
         onMapClick={(latlng) => console.log('Clicked:', latlng)}
@@ -94,32 +105,34 @@ export default function App() {
 }
 ```
 
-### React — all props
+### React — all component props
 
 ```tsx
 <MapAtlas
-  center={[lat, lng]}          // [number, number]
-  zoom={12}                     // number
-  minZoom={1}                   // number
-  maxZoom={19}                  // number
-  tileStyle="dark"             // 'osm' | 'satellite' | 'dark' | 'topo' | 'humanitarian' | 'cyclosm'
-  tileUrl="https://..."         // custom tile URL (overrides style)
-  attribution="..."             // override attribution
-  markers={[]}                  // MapAtlasMarker[]
-  polylines={[]}                // MapAtlasPolyline[]
-  polygons={[]}                 // MapAtlasPolygon[]
-  keyboard={true}               // arrow keys + +/- to zoom
-  inertia={true}                // smooth pan glide
-  scaleBar={true}               // show scale bar
-  className="my-map"            // container CSS class
-  cssStyle={{ borderRadius: 8 }}  // container inline styles
-  onMapClick={(latlng, e) => {}} // click handler
-  onViewChange={(center, zoom) => {}} // view change handler
-  onEngineReady={(engine) => {}}     // raw MapEngine access
+  center={[lat, lng]}              // [number, number] (latitude, longitude)
+  zoom={12}                         // Initial zoom level (1-19)
+  minZoom={1}                       // Lowest allowable zoom level
+  maxZoom={19}                      // Highest allowable zoom level
+  tileStyle="dark"                 // 'osm' | 'satellite' | 'dark' | 'topo' | 'humanitarian' | 'cyclosm'
+  tileUrl="https://..."             // Custom tile URL template (e.g. {z}/{x}/{y}.png)
+  attribution="..."                 // Custom attribution text/HTML
+  markers={[]}                      // Array of MapAtlasMarker
+  polylines={[]}                    // Array of MapAtlasPolyline
+  polygons={[]}                     // Array of MapAtlasPolygon
+  keyboard={true}                   // Enable arrow keys + +/- zoom controls
+  inertia={true}                    // Enable momentum pan gliding
+  scaleBar={true}                   // Show dynamic metric/imperial scale bar
+  className="my-map"                // Optional wrapper CSS class
+  cssStyle={{ borderRadius: 12 }}   // Optional inline styles
+  onMapClick={(latlng, e) => {}}    // Map click callback
+  onViewChange={(center, zoom) => {}} // Pan/zoom change callback
+  onEngineReady={(engine) => {}}    // Access underlying MapEngine instance
 />
 ```
 
-### Vanilla JavaScript / any framework
+---
+
+### Vanilla TypeScript / JavaScript
 
 ```ts
 import { MapEngine, TILE_STYLES } from 'map-atlas'
@@ -135,11 +148,11 @@ const engine = new MapEngine('#map-container', {
   scaleBar: true,
 })
 
-// Events
-engine.on('click', ({ latlng }) => console.log(latlng))
+// Event subscriptions
+engine.on('click', ({ latlng }) => console.log('Clicked:', latlng))
 engine.on('moveend', () => console.log(engine.getCenter(), engine.getZoom()))
 
-// Overlays
+// Adding Markers & Vectors
 const marker = engine.addMarker({ lat: 40.7128, lng: -74.006 }, {
   label: 'NYC',
   color: '#e53935',
@@ -151,7 +164,7 @@ const line = engine.addPolyline(
     { lat: 40.7128, lng: -74.006 },
     { lat: 34.0522, lng: -118.2437 },
   ],
-  { color: '#1a73e8', weight: 3, dash: '6 4' }
+  { color: '#1a73e8', weight: 4, dash: '6 4' }
 )
 
 const poly = engine.addPolygon(
@@ -164,7 +177,7 @@ const poly = engine.addPolygon(
   { fill: 'rgba(26,115,232,0.2)', color: '#1a73e8' }
 )
 
-// Navigation
+// Viewport manipulation
 engine.setView(51.5, -0.12, 14)
 engine.flyTo(48.8566, 2.3522, 12, 800)
 engine.fitBounds([
@@ -172,52 +185,57 @@ engine.fitBounds([
   { lat: 40.5, lng: -73.7 },
 ])
 
-// Popup
+// Auto-panning Popups
 const el = document.createElement('div')
-el.textContent = 'Hello from Map Atlas!'
+el.textContent = 'Welcome to Map Atlas!'
 engine.openPopup({ lat: 40.7128, lng: -74.006 }, el)
 
-// Cleanup
+// Clean up
 marker.remove()
 line.remove()
 engine.destroy()
 ```
 
-### Tile styles
+---
+
+### Built-in Tile Styles
 
 ```ts
 import { TILE_STYLES } from 'map-atlas'
 
-// Built-in presets:
-TILE_STYLES.osm          // Street
-TILE_STYLES.satellite    // Satellite (Esri)
-TILE_STYLES.dark         // Dark (CARTO)
-TILE_STYLES.topo         // Topographic (OpenTopoMap)
-TILE_STYLES.humanitarian // Humanitarian (HOT)
-TILE_STYLES.cyclosm      // Cycling (CyclOSM)
+TILE_STYLES.osm          // OpenStreetMap Standard
+TILE_STYLES.satellite    // High-res Esri World Imagery
+TILE_STYLES.dark         // CARTO Dark Matter (High Contrast)
+TILE_STYLES.topo         // OpenTopoMap (Contour lines & hillshades)
+TILE_STYLES.humanitarian // Humanitarian OpenStreetMap (HOT)
+TILE_STYLES.cyclosm      // CyclOSM (Bicycle infrastructure & elevation)
 
-// Use any preset:
+// Apply any preset:
 engine.setTiles(TILE_STYLES.satellite.tiles, TILE_STYLES.satellite.attribution)
 
-// Or use a custom URL:
-engine.setTiles('https://my-tiles.example.com/{z}/{x}/{y}.png', '© Me')
+// Or specify any custom tile service:
+engine.setTiles(['https://my-tiles.example.com/{z}/{x}/{y}.png'], '© My Custom Tiles')
 ```
 
-### Geocoding & search
+---
+
+### Geocoding & Search
 
 ```ts
 import { geocode, reverse } from 'map-atlas'
 
-// Forward geocode
+// Forward geocoding with typo-tolerant fallback
 const results = await geocode('Times Square')
 // [{ label: 'Times Square, Manhattan, NY', lat: 40.758, lng: -73.9855, ... }]
 
-// Reverse geocode
+// Reverse geocoding (coordinates to street address)
 const address = await reverse(40.758, -73.9855)
 // 'Times Square, Manhattan, New York, NY 10036, USA'
 ```
 
-### Routing
+---
+
+### Routing & Navigation
 
 ```ts
 import { route } from 'map-atlas'
@@ -231,13 +249,15 @@ const routes = await route(
 )
 
 const r = routes[0]
-// r.distance  — meters
-// r.duration  — seconds
-// r.geometry  — { coordinates: [[lng, lat], ...] }
-// r.legs      — turn-by-turn steps
+// r.distance  — Total distance in meters
+// r.duration  — Total duration in seconds
+// r.geometry  — GeoJSON coordinates [[lng, lat], ...]
+// r.legs      — Turn-by-turn guidance steps
 ```
 
-### Elevation & weather
+---
+
+### Elevation & Weather
 
 ```ts
 import { elevationBatch, weather } from 'map-atlas'
@@ -252,7 +272,9 @@ const w = await weather(40.7128, -74.006)
 // { temperature: 22, tempUnit: '°C', wind: 5.2, windUnit: 'km/h' }
 ```
 
-### Geo file import/export
+---
+
+### Geospatial Import & Export
 
 ```ts
 import {
@@ -262,47 +284,15 @@ import {
   download,
 } from 'map-atlas'
 
-// Parse GPX
+// Parsing uploaded tracks and shapes
 const places = parseGPX(gpxXmlString)
+const geoData = parseGeoJSON(geoJsonObject)
+const { places: kmlPlaces, lines, polygons } = parseKML(kmlString)
 
-// Parse GeoJSON (FeatureCollection with Points)
-const places2 = parseGeoJSON(geoJsonObject)
-
-// Parse KML (points, lines, polygons, MultiGeometry)
-const { places: p, lines, polygons } = parseKML(kmlString)
-
-// Export
+// Exporting files
 download('places.gpx', toGPX(places), 'application/gpx+xml')
-download('places.json', JSON.stringify(toGeoJSON(places)), 'application/json')
+download('places.geojson', JSON.stringify(toGeoJSON(places)), 'application/json')
 download('places.kml', toKML(places), 'application/vnd.google-earth.kml+xml')
-```
-
-### Distance & formatting
-
-```ts
-import { haversine, formatDistance, formatDuration, toDMS } from 'map-atlas'
-
-const meters = haversine(
-  { lat: 51.5074, lng: -0.1278 },
-  { lat: 48.8566, lng: 2.3522 }
-)
-// 343551.9...
-
-formatDistance(meters)  // "343.55 km"
-formatDuration(3600)    // "1 h 0 min"
-toDMS(48.8566, 'N', 'S') // "48°51′23.8″N"
-```
-
-### Projection (advanced)
-
-```ts
-import { project, unproject } from 'map-atlas'
-
-// lat/lng → pixel coordinates at a zoom level
-const pixel = project(51.5, -0.12, 13)
-
-// pixel → lat/lng
-const latlng = unproject(pixel.x, pixel.y, 13)
 ```
 
 ---
@@ -313,126 +303,107 @@ const latlng = unproject(pixel.x, pixel.y, 13)
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `constructor` | `new MapEngine(container, opts?)` | Create map on element or selector |
-| `on` | `on(event, handler)` | Subscribe to events (`click`, `mousemove`, `moveend`, `zoomend`) |
-| `off` | `off(event, handler)` | Unsubscribe |
-| `setTiles` | `setTiles(template[], attribution?)` | Change tile layer |
-| `addMarker` | `addMarker(latlng, style?)` | Add marker → `LayerHandle` |
-| `addPolyline` | `addPolyline(latlngs[], style?)` | Add polyline ��� `LayerHandle` |
-| `addPolygon` | `addPolygon(latlngs[], style?)` | Add polygon → `LayerHandle` |
-| `addCircle` | `addCircle(latlng, style?)` | Add circle → `LayerHandle` |
-| `setClusterMarkers` | `setClusterMarkers(points[])` | Enable marker clustering |
-| `openPopup` | `openPopup(latlng, element)` | Open popup at coordinate |
-| `closePopup` | `closePopup()` | Close current popup |
-| `getCenter` | `getCenter(): LatLng` | Current centre |
-| `getZoom` | `getZoom(): number` | Current zoom |
-| `getBounds` | `getBounds(): {minLat, maxLat, minLng, maxLng}` | Visible bounds |
-| `setView` | `setView(lat, lng, zoom?)` | Jump to location |
-| `flyTo` | `flyTo(lat, lng, zoom?, duration?)` | Animated fly-to |
-| `fitBounds` | `fitBounds(latlngs[], opts?)` | Fit to bounding box |
-| `zoomIn` | `zoomIn()` | Zoom in one level |
-| `zoomOut` | `zoomOut()` | Zoom out one level |
-| `destroy` | `destroy()` | Clean up |
+| `constructor` | `new MapEngine(container, opts?)` | Mount map on DOM element or selector |
+| `on` | `on(event, handler)` | Subscribe to events (`click`, `mousemove`, `moveend`, `zoomend`, `zoomlimit-min`) |
+| `off` | `off(event, handler)` | Unsubscribe from an event |
+| `setTiles` | `setTiles(urls[], attribution?, cssFilter?)` | Swap raster base and overlay layers |
+| `addMarker` | `addMarker(latlng, style?)` | Add marker pin & return `LayerHandle` |
+| `addPolyline` | `addPolyline(latlngs[], style?)` | Add vector polyline & return `LayerHandle` |
+| `addPolygon` | `addPolygon(latlngs[], style?)` | Add vector polygon & return `LayerHandle` |
+| `addCircle` | `addCircle(latlng, style?)` | Add vector circle & return `LayerHandle` |
+| `setClusterMarkers`| `setClusterMarkers(points[])` | Enable real-time dynamic marker clustering |
+| `openPopup` | `openPopup(latlng, element)` | Open an auto-panning popup card at coordinates |
+| `closePopup` | `closePopup()` | Close the active popup card |
+| `getCenter` | `getCenter(): LatLng` | Get current map center coordinates |
+| `getZoom` | `getZoom(): number` | Get current zoom level |
+| `getBounds` | `getBounds(): LatLngBounds` | Get current bounding box viewport |
+| `setView` | `setView(lat, lng, zoom?)` | Instantly jump to coordinate and zoom level |
+| `flyTo` | `flyTo(lat, lng, zoom?, duration?)` | Smooth animated ease transition |
+| `fitBounds` | `fitBounds(latlngs[], opts?)` | Fit camera view to enclose all coordinates |
+| `zoomIn` | `zoomIn()` | Step zoom in (+1 level) |
+| `zoomOut` | `zoomOut()` | Step zoom out (-1 level) |
+| `destroy` | `destroy()` | Unbind listeners, animation frames, and unmount |
 
 ### `LayerHandle`
 
 | Method | Description |
 |--------|-------------|
-| `remove()` | Remove from map |
-| `setLatLngs(latlngs[])` | Update polyline/polygon points (polyline/polygon only) |
-| `setLatLng(latlng)` | Update marker/circle position |
-| `setVisible(bool)` | Show or hide |
+| `remove()` | Remove layer from map canvas |
+| `setLatLngs(latlngs[])` | Update polyline or polygon coordinate array |
+| `setLatLng(latlng)` | Update marker or circle center coordinate |
+| `setVisible(bool)` | Dynamically toggle layer visibility |
 
 ### `MapEngineOptions`
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `center` | `[lat, lng]` | `[0, 0]` | Initial centre |
-| `zoom` | `number` | `2` | Initial zoom |
-| `minZoom` | `number` | `1` | Minimum zoom |
-| `maxZoom` | `number` | `19` | Maximum zoom |
-| `tileUrls` | `string[]` | �� | Tile URL templates |
-| `attribution` | `string` | — | Attribution HTML |
-| `keyboard` | `boolean` | `true` | Keyboard controls |
-| `inertia` | `boolean` | `true` | Pan inertia |
-| `scaleBar` | `boolean` | `true` | Show scale bar |
+| `center` | `[lat, lng]` | `[0, 0]` | Initial center coordinates |
+| `zoom` | `number` | `2` | Initial zoom level |
+| `minZoom` | `number` | `1` | Minimum allowable zoom level |
+| `maxZoom` | `number` | `19` | Maximum allowable zoom level |
+| `tileUrls` | `string[]` | OpenStreetMap | Raster tile URL templates |
+| `attribution` | `string` | OpenStreetMap | Attribution text or HTML |
+| `keyboard` | `boolean` | `true` | Enable keyboard navigation (`Arrow keys`, `+`, `-`) |
+| `inertia` | `boolean` | `true` | Momentum pan gliding physics |
+| `scaleBar` | `boolean` | `true` | Render dynamic scale bar indicator |
 
 ---
 
-## About
-
-Map Atlas is a full-featured web map built from scratch. The custom map engine handles projection, tile rendering, inertia panning, pinch-to-zoom, marker clustering, and SVG overlays — all without any mapping library.
-
-Built by **[Jojin John](https://github.com/jojin1709)**
-
-## Features
+## Complete Features
 
 ### 🗺 Custom Map Engine
+- **Web Mercator Projection** — Industry-standard EPSG:3857 with sub-pixel rendering.
+- **3D Globe Mode** — Interactive Three.js WebGL globe with atmospheric glow, auto-rotation, country boundaries, and instant 2D/3D toggle.
+- **Inertia Panning & Pinch Zoom** — Native touch gesture tracking tuned for mobile and trackpads.
+- **Marker Clustering** — Real-time clustering algorithm that aggregates points cleanly as zoom levels change.
+- **Auto-Pan Popups** — Bounding box auto-pan ensures popup action cards ("Start here", "Destination", "Street View") never bleed off-screen.
 
-| Feature | Description |
-|---------|-------------|
-| Web Mercator projection | Industry-standard EPSG:3857 with retina (2x) tile support and fallback |
-| 3D Globe Mode | Interactive Three.js 3D earth globe with atmospheric glow, auto-rotation, country labels, and instant 2D/3D toggle |
-| Inertia panning | Smooth physics-based glide after drag release |
-| Pinch-to-zoom | Native touch gesture support for phones and tablets |
-| Keyboard controls | Arrow keys to pan, `+`/`-` to zoom |
-| Marker clustering | Groups markers dynamically across zoom levels |
-| SVG overlays | High-contrast polyline casings, polygons, circles, and animated markers |
-| Scale bar | Dynamic distance scale |
-| Popups | Coordinate-anchored popup system with Wikipedia previews |
+### 🔍 Search & Turn-by-Turn Navigation
+- **Typo-Tolerant Geocoding** — Photon + Nominatim fuzzy matching instantly resolves misspelled searches.
+- **Turn-by-Turn GPS HUD** — Full-screen navigation with distance countdown, voice announcements (`SpeechSynthesis`), turn preview cards, and route overview.
+- **Route Guidance Connector** — Dynamic indicator connecting off-route user locations directly to the route start.
+- **Multi-Stop Route Planning** — Add, reorder, and clear waypoints with shortest-distance route optimization.
+- **Elevation Profiles** — Dynamic SVG elevation chart along route geometry.
 
-### 🔍 Search & Navigation
+### 🛠 Visual Tools & Overlays
+- **Live Weather Radar Overlay** — Real-time RainViewer precipitation radar layer with dynamic frame tracking.
+- **Live Traffic Flow** — Real-time traffic congestion and speed overlay.
+- **360° Street View** — Panoramic viewer modal with multi-provider fallback.
+- **Live Earthquakes** — USGS seismic magnitude feed with pulsating intensity markers.
+- **Distance & Area Measurement** — Click points to measure multi-segment distances and polygon areas.
+- **Drawing Tools** — Draw lines, polygons, and rectangles with full Undo/Redo (`Ctrl+Z` / `Ctrl+Y`).
+- **Device Compass Sensor** — Real-time heading orientation using device sensor gyroscope APIs.
 
-- **Typo-tolerant geocoding** — Photon fuzzy search fallback instantly resolves misspelled queries (e.g. "thrisuur")
-- **Directions autocomplete** — live search dropdowns for both starting point and destination
-- **GPS Turn-by-Turn navigation** — full-screen mobile HUD with distance countdown, voice announcements (SpeechSynthesis), turn preview, and route overview
-- **Route guidance connector** — dynamic guidance connecting off-route user locations directly to the route start
-- **1-Click GPS start** — set starting location to your exact GPS coordinates with one tap
-- **Multi-stop routes** — add and optimize waypoints for shortest distance
-- **100% Offline GPS maps** — download entire routes and hundreds of tile layers for backcountry or zero-signal navigation
-- **Elevation profile** — interactive SVG chart showing terrain elevation along routes
-- **Nearby search** — cafés, restaurants, fuel, pharmacies, hospitals, ATMs, schools, supermarkets
-- **6 map styles** — Street, Satellite, Dark, Topo, Humanitarian, Cycling
+### 💾 Offline Storage & Mobile PWA
+- **Visual Offline Area Manager** — Select an area radius, preview estimated download size, and batch cache tiles locally into IndexedDB.
+- **Persistent Mobile UI** — Top search pill and 5-tab bottom navigation (`z-50`) locked in place; never hide or shift unexpectedly.
+- **Progressive Web App (PWA)** — Installable on Android, iOS Safari, and Desktop Chrome with offline service worker support.
+- **Import & Export** — Full roundtrip support for GPX, GeoJSON, and KML files.
 
-### 🛠 Tools
+---
 
-- **360° Street View** — interactive street-level panoramic visual inspection directly from the map
-- **Live Earthquakes** — real-time USGS seismic magnitude feed with subtle pulsating markers
-- **Distance & area measurement** — click points, see cumulative distance and polygon area (m²/km²/ft²/acre)
-- **Drawing tools** — lines, polygons, rectangles with **undo/redo** (Ctrl+Z / Ctrl+Y)
-- **Heatmap** — smooth density gradient visualization for places and search results
-- **Weather** — current conditions at map centre (Open-Meteo)
-- **Fast geolocation** — instant GPS locate me with sub-200ms IP fallback
-- **Coordinate picker** — click to copy exact coordinates
-- **Right-click / Long-press menu** — set start/dest, street view, save place, zoom, copy coords
-- **Layer toggles** — show/hide routes, pins, shapes, tracks, and earthquakes independently
-- **Dark mode** — sleek neutral dark theme (`#121214`, `#18181b`)
-- **Print** — clean print layout
+## Embed Mode
 
-### 💾 Data & Mobile PWA
+Embed a map into any iframe with URL parameters — no code required:
 
-- **Saved places** — persisted in browser localStorage with custom icons and tags
-- **Import/Export** — GPX, GeoJSON, KML (points, lines, and polygons)
-- **Shareable links** — exact coordinates and zoom level encoded in URL hash
-- **Fullscreen mode** — distraction-free map view
-- **Responsive mobile drawer** — swipeable bottom sheet optimized for phones
-- **Progressive Web App (PWA)** — installable on Android, iOS Safari, and Desktop Chrome/Edge with offline service worker and custom app iconsesponsive** — bottom sheet on mobile devices
-- **PWA offline** — installable, tiles cached for offline use
-
-### 📎 Embed Mode
-
-Embed a map with URL parameters — no code required:
-
-```
-https://yourapp.com/?embed=true&lat=48.8584&lng=2.2945&zoom=16&style=dark&marker=48.8584,2.2945,Eiffel Tower
+```html
+<iframe
+  src="https://mapapp-lovat.vercel.app/?embed=true&lat=48.8584&lng=2.2945&zoom=16&style=dark"
+  width="100%"
+  height="500"
+  frameborder="0"
+></iframe>
 ```
 
-| Param | Description |
-|-------|-------------|
-| `embed=true` | Hide side panel, map only |
-| `lat`, `lng`, `zoom` | Centre and zoom level |
-| `style` | Tile style key (street, satellite, dark, topo, humanitarian, cycling) |
-| `marker` | `lat,lng,label` (pipe-separated for multiple) |
+| Param | Description | Example |
+|-------|-------------|---------|
+| `embed=true` | Hides side panel, fullscreen map only | `?embed=true` |
+| `lat`, `lng` | Initial center coordinate | `lat=48.8584&lng=2.2945` |
+| `zoom` | Initial zoom level | `zoom=16` |
+| `style` | Tile style preset | `style=satellite` |
+| `marker` | Pin location and label | `marker=48.8584,2.2945,Eiffel+Tower` |
+
+---
 
 ## Keyboard Shortcuts
 
@@ -443,120 +414,74 @@ https://yourapp.com/?embed=true&lat=48.8584&lng=2.2945&zoom=16&style=dark&marker
 | `-` | Zoom out |
 | Double-click | Zoom in at cursor |
 | Scroll wheel | Zoom at cursor |
-| Pinch | Zoom (touch devices) |
-| Right-click | Context menu |
+| Pinch | Native touch pinch-to-zoom |
+| Right-click / Long-press | Context menu (set start/dest, street view, copy coords) |
+
+---
 
 ## Architecture
 
 ```
 src/
-├── index.ts                 # Public library entry point
-├── engine/                  # Framework-free map engine (TypeScript)
-│   ├── MapEngine.ts         # Core: pan, zoom, overlays, popups, clustering
-│   ├── projection.ts        # Web Mercator math
-│   └── tiles.ts             # Tile layer management with retina support
+├── index.ts                 # Public npm library entry point
+├── engine/                  # Dependency-free map engine (TypeScript)
+│   ├── MapEngine.ts         # Pan, zoom, overlays, popups, clustering, scale
+│   ├── GlobeEngine.ts       # Three.js 3D earth globe with atmosphere
+│   ├── projection.ts        # Web Mercator mathematical projections
+│   └── tiles.ts             # Tile layer pipeline with retina support
 ├── services/
-│   ├── api.ts               # Nominatim, OSRM, Valhalla, Overpass, Open-Meteo
-│   ├── geo.ts               # Haversine, formatting, GPX/GeoJSON/KML parsers
-���   └── mapRef.ts            # Safe global engine reference
+│   ├── api.ts               # Geocoding, routing, RainViewer radar, USGS earthquakes
+│   ├── geo.ts               # Haversine, distance/area formatting, GPX/GeoJSON/KML
+│   ├── offline.ts           # IndexedDB offline tile cache storage manager
+│   └── mapRef.ts            # Global engine reference bridge
 ├── store/
-│   └── useAppStore.ts       # Zustand global state (demo app only)
+│   └── useAppStore.ts       # Zustand reactive application state
 ├── components/
-│   ├── MapAtlas.tsx         # React wrapper component (library export)
-│   ��── MapView.tsx          # Map container + overlay management (demo)
-│   ├── Layout.tsx           # Panel layout (demo)
-│   ├── SearchPanel.tsx      # Geocoding + autocomplete + nearby (demo)
-│   ├─��� DirectionsPanel.tsx  # Routing + waypoints + elevation (demo)
-│   ├── ToolsPanel.tsx       # Measure, draw, weather, geolocation (demo)
-│   ├── LayersPanel.tsx      # Layer visibility toggles (demo)
-│   ���── PlacesPanel.tsx      # Saved places + import/export (demo)
-│   ├── ContextMenu.tsx      # Right-click menu (demo)
-│   ├── ElevationChart.tsx   # SVG elevation profile (demo)
-│   └── Toast.tsx            # Notifications (demo)
-├── types/                   # Shared TypeScript types
-├── tileStyles.ts            # Reusable tile style presets
-├── config.ts                # Demo app configuration
-├��─ App.tsx                  # Demo app root
-├── main.tsx                 # Demo app entry
-└── index.css                # Tailwind + custom styles
+│   ├── MapAtlas.tsx         # Drop-in React component library export
+│   ├── MapView.tsx          # Map container, floating dock, and globe toggle
+│   ├── Layout.tsx           # Side panel, mobile search bar, and bottom navigation
+│   ├── SearchPanel.tsx      # Autocomplete search, category chips, recent history
+│   ├── DirectionsPanel.tsx  # Multi-stop routing, profile switcher, elevation
+│   ├── LayersPanel.tsx      # Map styles, weather radar, traffic, 3D globe toggle
+│   ├── ToolsPanel.tsx       # Measurement, drawing tools, heatmap, offline manager
+│   ├── PlacesPanel.tsx      # Saved bookmarks, GPX/GeoJSON/KML import and export
+│   ├── DocsView.tsx         # Complete interactive Leaflet & Atlas API documentation
+│   ├── StreetViewModal.tsx  # 360° panoramic street-level viewer modal
+│   ├── OfflineManagerModal.tsx # Visual offline area tile downloader
+│   └── NavOverlay.tsx       # Turn-by-turn navigation HUD with voice guidance
+├── types/                   # Shared TypeScript definitions
+├── config.ts                # App configuration and service endpoints
+├── App.tsx                  # Root application router (/ and /docs)
+└── index.css                # Tailwind CSS + custom design system tokens
 ```
 
-## Configuration (demo app)
-
-Edit `src/config.ts` to customise:
-
-| Setting | Description |
-|---------|-------------|
-| **Map styles** | Add any raster tile URL with `{z}/{x}/{y}` placeholders |
-| **Nearby categories** | Add any OSM `amenity` value |
-| **Routing profiles** | OSRM for driving, Valhalla for walking/cycling |
-| **Service URLs** | Point at your own instances for production |
-
-## Self-Hosting Services
-
-Public endpoints are free but rate-limited. For production, self-host:
-
-| Service | Options |
-|---------|---------|
-| **Routing** | [OSRM](https://project-osrm.org/), [GraphHopper](https://www.graphhopper.com/), [Valhalla](https://valhalla.github.io/valhalla/) |
-| **Geocoding** | [Nominatim](https://nominatim.org/), [Photon](https://photon.komoot.io/) |
-| **Tiles** | [Planetiler](https://github.com/onthegomap/planetiler), [Tilemaker](https://github.com/systemed/tilemaker) → PMTiles or [TileServer GL](https://github.com/maptiler/tileserver-gl) |
-
-## Languages & Technologies
-
-| Language / Technology | Role & Architecture Usage |
-|-----------------------|---------------------------|
-| **TypeScript** | Main map engine, UI components, interactions, type-safe APIs |
-| **JavaScript** | Browser/runtime compatibility, service worker (`sw.js`), build scripts |
-| **CSS** | Map UI tokens, responsive bottom sheets, HUD controls, dark mode theme |
-| **HTML** | App shell, PWA manifest integration, static embed pages |
-| **Python** | OSM/GIS data processing, spatial validation, dataset generation |
-| **SQL** | Spatial queries/schema & PostGIS database pipelines |
-| **Rust** | High-performance geometry, spatial indexing, WASM modules |
-| **GLSL** | GPU shaders, Three.js 3D globe atmosphere, heatmap rendering, terrain effects |
-| **WebAssembly (WASM)** | Browser execution target for Rust/C++ geospatial algorithms |
-| **Go** | Lightweight map/data services and microservice tooling |
-| **C++** | Native/high-performance GIS vector processing and tile engines |
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Languages | TypeScript, JavaScript, CSS, HTML |
-| UI Framework | React 18 / 19 |
-| 3D Graphics | Three.js (WebGL / GLSL) |
-| Build & Bundler | Vite 5.4 |
-| Cloud & Deployment | Cloudflare Pages / Workers & Vercel |
-| PWA Engine | Service Worker (`sw.js`) + Web App Manifest |
-| Styling | Tailwind CSS 3.4 + Custom CSS Design System |
-| State Management | Zustand 4.5 |
-| Map Engine | Custom dependency-free Web Mercator + 3D Globe |
-| Geocoding | Nominatim + Photon (Typo-tolerant fuzzy search) |
-| Routing & Directions | OSRM + Valhalla (Turn-by-turn navigation) |
-| Offline Storage | CacheStorage (tiles & shell) + localStorage |
-| Weather & Seismic | Open-Meteo + USGS Live Earthquake Feeds |
-| Elevation | OpenTopoData |
+---
 
 ## Contributing
 
-Contributions are welcome! Please:
+Contributions are welcome! Please feel free to open an issue or submit a pull request:
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+---
 
 ## License
 
 MIT License — see [LICENSE](LICENSE) for details.
 
-## Credits
+## Credits & Attributions
 
 - Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors ([ODbL](https://opendatacommons.org/licenses/odbl/))
 - Satellite imagery © [Esri](https://www.esri.com)
-- Dark tiles © [CARTO](https://carto.com)
-- Topo tiles © [OpenTopoMap](https://opentopomap.org) (CC-BY-SA)
+- Dark matter tiles © [CARTO](https://carto.com)
+- Topographic contours © [OpenTopoMap](https://opentopomap.org) (CC-BY-SA)
+- Weather radar data © [RainViewer](https://www.rainviewer.com/api.html)
+- Weather data © [Open-Meteo](https://open-meteo.com/)
+- Seismic data © [USGS Earthquake Hazards Program](https://earthquake.usgs.gov/)
 
 ---
 
@@ -564,6 +489,6 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 **Built with ❤️ by [Jojin John](https://github.com/jojin1709)**
 
-⭐ Star this repo if you find it useful!
+⭐ Star this repository if you find it helpful!
 
 </div>
