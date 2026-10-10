@@ -7,6 +7,8 @@ export interface TileLayerConfig {
   attribution?: string
   retina?: boolean
   opacity?: number
+  minZoom?: number
+  maxZoom?: number
 }
 
 export class TileLayer {
@@ -14,6 +16,8 @@ export class TileLayer {
   private imgs = new Map<string, HTMLImageElement>()
   private template: string
   private opacity: number | undefined
+  private minZoom: number | undefined
+  private maxZoom: number | undefined
 
   constructor(
     container: HTMLElement,
@@ -23,6 +27,8 @@ export class TileLayer {
     this.container = container
     this.template = config.template
     this.opacity = config.opacity
+    this.minZoom = config.minZoom
+    this.maxZoom = config.maxZoom
     if (config.attribution && attributionEl) {
       attributionEl.innerHTML = config.attribution
     }
@@ -39,6 +45,15 @@ export class TileLayer {
   }
 
   draw(ox: number, oy: number, w: number, h: number, zoom: number, dpr: number): void {
+    if (this.maxZoom !== undefined && zoom > this.maxZoom) {
+      this.clear()
+      return
+    }
+    if (this.minZoom !== undefined && zoom < this.minZoom) {
+      this.clear()
+      return
+    }
+
     const n = Math.pow(2, zoom)
     const tileSize = TILE_SIZE
     const x0 = Math.floor(ox / tileSize)

@@ -4,7 +4,22 @@
 
 /* ---- base ---- */
 * { box-sizing: border-box; }
-html, body, #root { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+html, body, #root { margin: 0; padding: 0; height: 100%; }
+html:not(.docs-mode), body:not(.docs-mode), #root:not(.docs-mode) {
+  overflow: hidden;
+}
+html.docs-mode, body.docs-mode {
+  height: auto;
+  min-height: 100%;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+#root.docs-mode {
+  height: auto;
+  min-height: 100%;
+  overflow: visible !important;
+}
 body { font-family: system-ui, -apple-system, sans-serif; }
 
 /* ---- map engine root ---- */

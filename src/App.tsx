@@ -16,6 +16,20 @@ export default function App() {
     return () => window.removeEventListener('popstate', handleLocationChange)
   }, [])
 
+  useEffect(() => {
+    if (isDocs) {
+      document.documentElement.classList.add('docs-mode')
+      document.body.classList.add('docs-mode')
+      const root = document.getElementById('root')
+      if (root) root.classList.add('docs-mode')
+    } else {
+      document.documentElement.classList.remove('docs-mode')
+      document.body.classList.remove('docs-mode')
+      const root = document.getElementById('root')
+      if (root) root.classList.remove('docs-mode')
+    }
+  }, [isDocs])
+
   if (isDocs) {
     return <DocsView />
   }

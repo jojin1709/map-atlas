@@ -516,19 +516,37 @@ export async function fetchLiveEarthquakes(): Promise<EarthquakeRecord[]> {
 
 /* ---- RainViewer Live Weather Radar ---- */
 
-export async function fetchRainViewerTimestamp(): Promise<number | null> {
+export interface RainViewerRadarInfo {
+  host: string
+  path: string
+  time: number
+}
+
+export async function fetchRainViewerRadar(): Promise<RainViewerRadarInfo | null> {
   try {
-    const data = await json<{ radar?: { past?: Array<{ time: number }> } }>(
-      'https://api.rainviewer.com/public/weather-maps.json'
-    )
+    const data = await json<{
+      host?: string
+      radar?: { past?: Array<{ time: number; path: string }> }
+    }>('https://api.rainviewer.com/public/weather-maps.json')
     const past = data.radar?.past
+    const host = data.host || 'https://tilecache.rainviewer.com'
     if (past && past.length) {
-      return past[past.length - 1].time
+      const latest = past[past.length - 1]
+      return {
+        host,
+        path: latest.path,
+        time: latest.time,
+      }
     }
   } catch {
     /* fallback */
   }
   return null
+}
+
+export async function fetchRainViewerTimestamp(): Promise<number | null> {
+  const info = await fetchRainViewerRadar()
+  return info ? info.time : null
 }
 
 /* ---- International Space Station (ISS) Tracker ---- */

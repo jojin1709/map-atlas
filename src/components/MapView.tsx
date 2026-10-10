@@ -93,7 +93,7 @@ export default function MapView() {
   const toggleCompass = useAppStore(s => s.toggleCompass)
   const toggleLayer = useAppStore(s => s.toggleLayer)
   const setOfflineManagerOpen = useAppStore(s => s.setOfflineManagerOpen)
-  const radarTimestamp = useAppStore(s => s.radarTimestamp)
+  const radarInfo = useAppStore(s => s.radarInfo)
 
   /* ---- create engine ---- */
   useEffect(() => {
@@ -203,12 +203,12 @@ export default function MapView() {
     if (!s) return
 
     let tiles = [...s.tiles]
-    if (layers.radar && radarTimestamp) {
-      const radarUrl = `https://tilecache.rainviewer.com/v2/radar/${radarTimestamp}/256/{z}/{x}/{y}/2/1_1.png`
+    if (layers.radar && radarInfo) {
+      const radarUrl = `${radarInfo.host}${radarInfo.path}/256/{z}/{x}/{y}/2/1_1.png`
       tiles = [s.tiles[0], radarUrl]
     }
     engine.setTiles(tiles, s.attribution, s.cssFilter)
-  }, [style, layers.radar, radarTimestamp])
+  }, [style, layers.radar, radarInfo])
 
   /* ---- open popup ---- */
   const openPointPopup = useCallback((p: LatLng, title?: string) => {

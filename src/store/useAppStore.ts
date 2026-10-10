@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { DrawTool, DrawnShape, GeocodeResult, LatLng, OSRMRoute, SavedPlace, TrackPoint } from '../types'
-import type { WikipediaPlaceSummary, EarthquakeRecord } from '../services/api'
-import { fetchLiveEarthquakes, fetchRainViewerTimestamp } from '../services/api'
+import type { WikipediaPlaceSummary, EarthquakeRecord, RainViewerRadarInfo } from '../services/api'
+import { fetchLiveEarthquakes, fetchRainViewerRadar } from '../services/api'
 
 export interface LayerVisibility {
   routes: boolean
@@ -171,6 +171,7 @@ interface AppState {
 
   // Weather Radar
   radarTimestamp: number | null
+  radarInfo: RainViewerRadarInfo | null
   fetchRadarTimestamp: () => Promise<void>
 }
 
@@ -369,12 +370,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   radarTimestamp: null,
+  radarInfo: null,
   fetchRadarTimestamp: async () => {
     try {
       get().showToast('Fetching latest weather radar…')
-      const ts = await fetchRainViewerTimestamp()
-      if (ts) {
-        set({ radarTimestamp: ts })
+      const info = await fetchRainViewerRadar()
+      if (info) {
+        set({ radarInfo: info, radarTimestamp: info.time })
         get().showToast('Live Weather Radar overlay active')
       }
     } catch {
