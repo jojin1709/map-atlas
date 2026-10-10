@@ -58,6 +58,9 @@ export class GlobeEngine {
 
   // Interaction
   private isDragging = false
+  private dragStartX = 0
+  private dragStartY = 0
+  private hasDragged = false
   private lastMouseX = 0
   private lastMouseY = 0
   private velYaw = 0
@@ -477,6 +480,9 @@ export class GlobeEngine {
     el.addEventListener('mousedown', (e) => {
       this.isDragging = true
       this.autoRotate = false
+      this.dragStartX = e.clientX
+      this.dragStartY = e.clientY
+      this.hasDragged = false
       this.lastMouseX = e.clientX
       this.lastMouseY = e.clientY
       this.lastTime = performance.now()
@@ -502,6 +508,10 @@ export class GlobeEngine {
       }
 
       if (!this.isDragging) return
+      if (Math.hypot(e.clientX - this.dragStartX, e.clientY - this.dragStartY) > 5) {
+        this.hasDragged = true
+      }
+
       const now = performance.now()
       const dt = Math.max(1, now - this.lastTime)
       const dx = e.clientX - this.lastMouseX
@@ -539,26 +549,26 @@ export class GlobeEngine {
       }
     }, { passive: false })
 
-    // Double click to fly into location
+    // Double click to zoom closer on globe
     el.addEventListener('dblclick', (e) => {
       const rect = el.getBoundingClientRect()
       const mouseX = e.clientX - rect.left
       const mouseY = e.clientY - rect.top
       const hit = this.raycast(mouseX, mouseY)
       if (hit) {
-        this.flyTo(hit.lat, hit.lng, 2.15, () => {
-          this.zoomInFlatCb?.(hit)
-        })
+        this.flyTo(hit.lat, hit.lng, 2.15)
       }
     })
 
-    // Click handler
+    // Click handler: centers on clicked location without switching to 2D
     el.addEventListener('click', (e) => {
+      if (this.hasDragged) return
       const rect = el.getBoundingClientRect()
       const mouseX = e.clientX - rect.left
       const mouseY = e.clientY - rect.top
       const hit = this.raycast(mouseX, mouseY)
       if (hit) {
+        this.flyTo(hit.lat, hit.lng, this.distance)
         this.clickCb?.(hit)
       }
     })

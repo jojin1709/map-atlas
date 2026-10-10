@@ -283,11 +283,15 @@ export default function MapView() {
           }
         },
         onClick: latlng => {
-          setGlobeMode(false)
-          if (engineRef.current) {
-            engineRef.current.setView(latlng.lat, latlng.lng, 4)
-            setTimeout(() => openPointPopup(latlng), 250)
+          const store = useAppStore.getState()
+          if (store.coordPickerMode) {
+            navigator.clipboard?.writeText(`${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`)
+            store.showToast(`Copied: ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`)
+            store.setCoordPickerMode(false)
+            return
           }
+          const el = document.getElementById('coords-display')
+          if (el) el.textContent = `${toDecimal(latlng.lat, latlng.lng)}  ·  ${coordsDMS(latlng.lat, latlng.lng)}`
         },
         onMove: latlng => {
           const el = document.getElementById('coords-display')
