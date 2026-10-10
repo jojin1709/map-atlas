@@ -82,7 +82,10 @@ export class GlobeEngine {
   constructor(container: HTMLElement, opts: GlobeEngineOptions = {}) {
     this.container = container
     this.container.classList.add('globe-container')
-    this.container.style.position = 'relative'
+    this.container.style.position = 'absolute'
+    this.container.style.inset = '0'
+    this.container.style.width = '100%'
+    this.container.style.height = '100%'
     this.container.style.overflow = 'hidden'
     this.container.style.background = 'radial-gradient(ellipse at center, #0a1128 0%, #030712 100%)'
 

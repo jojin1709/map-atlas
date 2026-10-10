@@ -538,7 +538,7 @@ export default function MapView() {
       {/* 2D Flat Map View */}
       <div
         ref={containerRef}
-        className={`w-full h-full transition-opacity duration-300 ${globeMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+        className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${globeMode ? 'opacity-0 pointer-events-none z-0' : 'opacity-100 z-10'}`}
       />
 
       {/* 3D Round Globe View */}
