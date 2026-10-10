@@ -4,6 +4,7 @@ import { useRef } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import * as geo from '../services/geo'
 import { getEngine } from '../services/mapRef'
+import { Trash2, FolderOpen, Download } from 'lucide-react'
 
 export default function PlacesPanel() {
   const places = useAppStore(s => s.places)
@@ -73,36 +74,43 @@ export default function PlacesPanel() {
               {p.name}
             </span>
             <button
-              className="ghost small"
+              className="ghost small p-1 text-gray-400 hover:text-red-500 transition"
               onClick={() => useAppStore.getState().removePlace(p.id)}
               title="Remove"
             >
-              ✕
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
         ))}
       </div>
-      <div className="flex gap-1.5 mt-2 flex-wrap">
+      <div className="flex gap-1.5 mt-2 flex-wrap items-center">
         <button
-          className="ghost small"
+          className="ghost small flex items-center gap-1"
           onClick={() => geo.download('places.geojson', JSON.stringify(geo.toGeoJSON(places), null, 2), 'application/geo+json')}
+          title="Export GeoJSON"
         >
-          GeoJSON
+          <Download className="w-3 h-3" />
+          <span>GeoJSON</span>
         </button>
         <button
-          className="ghost small"
+          className="ghost small flex items-center gap-1"
           onClick={() => geo.download('places.gpx', geo.toGPX(places), 'application/gpx+xml')}
+          title="Export GPX"
         >
-          GPX
+          <Download className="w-3 h-3" />
+          <span>GPX</span>
         </button>
         <button
-          className="ghost small"
+          className="ghost small flex items-center gap-1"
           onClick={() => geo.download('places.kml', geo.toKML(places), 'application/vnd.google-earth.kml+xml')}
+          title="Export KML"
         >
-          KML
+          <Download className="w-3 h-3" />
+          <span>KML</span>
         </button>
-        <label className="ghost small cursor-pointer">
-          Import
+        <label className="ghost small cursor-pointer flex items-center gap-1" title="Import GPX, KML, or GeoJSON">
+          <FolderOpen className="w-3 h-3 text-amber-500" />
+          <span>Import</span>
           <input
             ref={fileRef}
             type="file"

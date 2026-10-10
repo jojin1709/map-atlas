@@ -6,6 +6,27 @@ import * as api from '../services/api'
 import { CONFIG } from '../config'
 import { coordsDMS, parseGPX, parseGPXTrack, toGPX, parseGeoJSON, toGeoJSON, download } from '../services/geo'
 import { getEngine } from '../services/mapRef'
+import {
+  PenTool,
+  Pentagon,
+  Square,
+  Undo2,
+  Redo2,
+  CloudSun,
+  Flame,
+  Crosshair,
+  Radio,
+  FolderOpen,
+  Download,
+  FileJson,
+  Share2,
+  Sun,
+  Moon,
+  Maximize2,
+  Minimize2,
+  Printer,
+  Target,
+} from 'lucide-react'
 
 export default function ToolsPanel() {
   const [weatherInfo, setWeatherInfo] = useState('')
@@ -221,26 +242,43 @@ export default function ToolsPanel() {
           <button
             key={t}
             onClick={() => useAppStore.getState().setDrawTool(drawTool === t ? 'none' : t)}
-            className={drawTool === t ? 'active' : 'ghost'}
+            className={`flex items-center gap-1.5 ${drawTool === t ? 'active' : 'ghost'}`}
           >
-            {t === 'line' ? '✏ Line' : t === 'polygon' ? '⬠ Poly' : '▭ Rect'}
+            {t === 'line' ? (
+              <>
+                <PenTool className="w-3.5 h-3.5" />
+                <span>Line</span>
+              </>
+            ) : t === 'polygon' ? (
+              <>
+                <Pentagon className="w-3.5 h-3.5" />
+                <span>Poly</span>
+              </>
+            ) : (
+              <>
+                <Square className="w-3.5 h-3.5" />
+                <span>Rect</span>
+              </>
+            )}
           </button>
         ))}
         <button
           onClick={() => useAppStore.getState().undo()}
           disabled={!canUndo}
-          className="ghost"
+          className="ghost flex items-center gap-1.5"
           title="Undo (Ctrl+Z)"
         >
-          ↩ Undo
+          <Undo2 className="w-3.5 h-3.5" />
+          <span>Undo</span>
         </button>
         <button
           onClick={() => useAppStore.getState().redo()}
           disabled={!canRedo}
-          className="ghost"
+          className="ghost flex items-center gap-1.5"
           title="Redo (Ctrl+Y)"
         >
-          ↪ Redo
+          <Redo2 className="w-3.5 h-3.5" />
+          <span>Redo</span>
         </button>
         <button onClick={() => useAppStore.getState().clearShapes()} className="ghost">
           Clear shapes
@@ -261,22 +299,34 @@ export default function ToolsPanel() {
             <option key={k} value={k}>{s.label}</option>
           ))}
         </select>
-        <button onClick={getWeather} disabled={weatherLoading} className="ghost">
-          Weather
+        <button onClick={getWeather} disabled={weatherLoading} className="ghost flex items-center gap-1.5">
+          <CloudSun className="w-3.5 h-3.5 text-sky-500" />
+          <span>Weather</span>
         </button>
-        <button onClick={toggleHeatmap} className={heatmapOn ? 'active' : 'ghost'}>
-          🔥
+        <button onClick={toggleHeatmap} className={`flex items-center justify-center ${heatmapOn ? 'active' : 'ghost'}`} title="Toggle Heatmap">
+          <Flame className="w-4 h-4 text-orange-500" />
         </button>
       </div>
       {weatherInfo && <div className="muted text-xs mt-1">{weatherInfo}</div>}
 
       {/* Geolocation + Track */}
       <div className="flex gap-1.5 mt-2 flex-wrap">
-        <button onClick={locate} className="ghost">
-          📍 Locate me
+        <button onClick={locate} className="ghost flex items-center gap-1.5">
+          <Crosshair className="w-3.5 h-3.5 text-emerald-500" />
+          <span>Locate me</span>
         </button>
-        <button onClick={toggleTrack} className={recording ? 'active' : 'ghost'}>
-          {recording ? '⏹ Stop' : '⏺ Track'}
+        <button onClick={toggleTrack} className={`flex items-center gap-1.5 ${recording ? 'active' : 'ghost'}`}>
+          {recording ? (
+            <>
+              <Square className="w-3.5 h-3.5 text-red-500 fill-current" />
+              <span>Stop</span>
+            </>
+          ) : (
+            <>
+              <Radio className="w-3.5 h-3.5 text-blue-500" />
+              <span>Track</span>
+            </>
+          )}
         </button>
       </div>
       {track.length > 1 && (
@@ -285,8 +335,9 @@ export default function ToolsPanel() {
         </div>
       )}
       {userLocation && (
-        <div className="muted text-xs mt-1">
-          📍 {userLocation.lat.toFixed(5)}, {userLocation.lng.toFixed(5)}
+        <div className="muted text-xs mt-1 flex items-center gap-1">
+          <Crosshair className="w-3 h-3 text-blue-500" />
+          <span>{userLocation.lat.toFixed(5)}, {userLocation.lng.toFixed(5)}</span>
         </div>
       )}
 
@@ -300,32 +351,42 @@ export default function ToolsPanel() {
           className="hidden"
           style={{ display: 'none' }}
         />
-        <button onClick={() => fileInputRef.current?.click()} className="ghost" title="Import GPX or GeoJSON file">
-          📂 Import GPX
+        <button onClick={() => fileInputRef.current?.click()} className="ghost flex items-center gap-1.5" title="Import GPX or GeoJSON file">
+          <FolderOpen className="w-3.5 h-3.5 text-amber-500" />
+          <span>Import GPX</span>
         </button>
-        <button onClick={exportGPX} className="ghost" title="Export current track or places as GPX">
-          💾 GPX
+        <button onClick={exportGPX} className="ghost flex items-center gap-1.5" title="Export current track or places as GPX">
+          <Download className="w-3.5 h-3.5" />
+          <span>GPX</span>
         </button>
-        <button onClick={exportGeoJSON} className="ghost" title="Export places as GeoJSON">
-          💾 GeoJSON
+        <button onClick={exportGeoJSON} className="ghost flex items-center gap-1.5" title="Export places as GeoJSON">
+          <FileJson className="w-3.5 h-3.5" />
+          <span>GeoJSON</span>
         </button>
       </div>
 
       {/* Share + Dark + Fullscreen + Print + Coord Picker + Clear */}
-      <div className="flex gap-1.5 mt-2 flex-wrap">
-        <button onClick={share} className="ghost">Share</button>
-        <button onClick={() => useAppStore.getState().toggleDark()} className="ghost">
-          {dark ? '☀️' : '🌙'}
+      <div className="flex gap-1.5 mt-2 flex-wrap items-center">
+        <button onClick={share} className="ghost flex items-center gap-1.5">
+          <Share2 className="w-3.5 h-3.5" />
+          <span>Share</span>
         </button>
-        <button onClick={() => useAppStore.getState().toggleFullscreen()} className="ghost">
-          {fullscreen ? '⊡' : '⛶'}
+        <button onClick={() => useAppStore.getState().toggleDark()} className="ghost flex items-center justify-center p-2" title="Toggle theme">
+          {dark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
         </button>
-        <button onClick={() => window.print()} className="ghost">🖨 Print</button>
+        <button onClick={() => useAppStore.getState().toggleFullscreen()} className="ghost flex items-center justify-center p-2" title="Toggle fullscreen">
+          {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+        </button>
+        <button onClick={() => window.print()} className="ghost flex items-center gap-1.5">
+          <Printer className="w-3.5 h-3.5" />
+          <span>Print</span>
+        </button>
         <button
           onClick={() => useAppStore.getState().setCoordPickerMode(!coordPickerMode)}
-          className={coordPickerMode ? 'active' : 'ghost'}
+          className={`flex items-center gap-1.5 ${coordPickerMode ? 'active' : 'ghost'}`}
         >
-          🎯 Pick coords
+          <Target className="w-3.5 h-3.5 text-blue-500" />
+          <span>Pick coords</span>
         </button>
         <button onClick={clearAll} className="ghost">Clear</button>
       </div>

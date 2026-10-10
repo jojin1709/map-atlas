@@ -1,5 +1,6 @@
 import { useAppStore } from '../store/useAppStore'
 import { getEngine } from '../services/mapRef'
+import { X, ExternalLink, Navigation, Bookmark } from 'lucide-react'
 
 export default function PlaceCard() {
   const selectedPlace = useAppStore(s => s.selectedPlace)
@@ -34,10 +35,10 @@ export default function PlaceCard() {
           </div>
           <button
             onClick={() => setSelectedPlace(null)}
-            className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 transition text-sm"
+            className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 transition"
             title="Close"
           >
-            ✕
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -55,9 +56,10 @@ export default function PlaceCard() {
                   getEngine()?.flyTo(selectedPlace.lat, selectedPlace.lng, 14)
                 }
               }}
-              className="flex-1 py-1.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-lg transition text-center"
+              className="flex-1 py-1.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-lg transition flex items-center justify-center gap-1.5"
             >
-              Directions
+              <Navigation className="w-3.5 h-3.5" />
+              <span>Directions</span>
             </button>
           )}
 
@@ -74,9 +76,10 @@ export default function PlaceCard() {
                   useAppStore.getState().showToast(`Saved "${selectedPlace.title}"`)
                 }
               }}
-              className="py-1.5 px-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs rounded-lg transition"
+              className="py-1.5 px-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs rounded-lg transition flex items-center gap-1.5"
             >
-              Save
+              <Bookmark className="w-3.5 h-3.5 text-amber-500" />
+              <span>Save</span>
             </button>
           )}
 
@@ -85,10 +88,11 @@ export default function PlaceCard() {
               href={selectedPlace.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="py-1.5 px-2 text-xs text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition"
+              className="py-1.5 px-2 text-xs text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition flex items-center gap-1"
               title="Read on Wikipedia"
             >
-              Wiki ↗
+              <span>Wiki</span>
+              <ExternalLink className="w-3 h-3" />
             </a>
           )}
         </div>

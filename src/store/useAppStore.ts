@@ -59,6 +59,7 @@ interface AppState {
   setTo: (p: LatLng | null) => void
   addWaypoint: (p: LatLng) => void
   removeWaypoint: (i: number) => void
+  setWaypoints: (w: LatLng[]) => void
   clearWaypoints: () => void
   setRoutes: (r: OSRMRoute[]) => void
   setRouteIndex: (i: number) => void
@@ -190,6 +191,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setTo: p => set({ to: p }),
   addWaypoint: p => set(s => ({ waypoints: [...s.waypoints, p] })),
   removeWaypoint: i => set(s => ({ waypoints: s.waypoints.filter((_, idx) => idx !== i) })),
+  setWaypoints: w => set({ waypoints: w }),
   clearWaypoints: () => set({ waypoints: [] }),
   setRoutes: r => set({ routes: r, routeIndex: 0 }),
   setRouteIndex: i => set({ routeIndex: i }),

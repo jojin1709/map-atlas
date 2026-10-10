@@ -1,30 +1,36 @@
-/* Layers panel: toggle visibility of map layers. */
+/* Layers panel: toggle visibility of map layers with clean SVG icons. */
 
 import { useAppStore } from '../store/useAppStore'
 import type { LayerVisibility } from '../store/useAppStore'
+import {
+  Globe,
+  Route,
+  MapPin,
+  Search,
+  PenLine,
+  Ruler,
+  Radio,
+  Crosshair,
+  Bookmark,
+  Activity,
+} from 'lucide-react'
 
-const LAYER_LABELS: Record<keyof LayerVisibility, string> = {
-  routes: 'Routes',
-  pins: 'Start/Destination pins',
-  searchResults: 'Search results',
-  shapes: 'Drawn shapes',
-  measure: 'Measurements',
-  track: 'GPS track',
-  userLocation: 'Your location',
-  places: 'Saved places',
-  earthquakes: 'Live Earthquakes (USGS)',
+interface LayerMeta {
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  color: string
 }
 
-const LAYER_ICONS: Record<keyof LayerVisibility, string> = {
-  routes: '🛤',
-  pins: '📍',
-  searchResults: '🔍',
-  shapes: '✏️',
-  measure: '📏',
-  track: '⏺',
-  userLocation: '📡',
-  places: '⭐',
-  earthquakes: '🌋',
+const LAYER_CONFIG: Record<keyof LayerVisibility, LayerMeta> = {
+  routes: { label: 'Routes', icon: Route, color: 'text-blue-500' },
+  pins: { label: 'Start/Destination pins', icon: MapPin, color: 'text-emerald-500' },
+  searchResults: { label: 'Search results', icon: Search, color: 'text-rose-500' },
+  shapes: { label: 'Drawn shapes', icon: PenLine, color: 'text-amber-500' },
+  measure: { label: 'Measurements', icon: Ruler, color: 'text-purple-500' },
+  track: { label: 'GPS track', icon: Radio, color: 'text-indigo-500' },
+  userLocation: { label: 'Your location', icon: Crosshair, color: 'text-cyan-500' },
+  places: { label: 'Saved places', icon: Bookmark, color: 'text-yellow-500' },
+  earthquakes: { label: 'Live Earthquakes (USGS)', icon: Activity, color: 'text-red-500' },
 }
 
 export default function LayersPanel() {
@@ -40,8 +46,8 @@ export default function LayersPanel() {
       </div>
       <div className="mb-3 p-2 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60">
         <label className="flex items-center justify-between cursor-pointer">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">🌐</span>
+          <div className="flex items-center gap-2.5">
+            <Globe className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             <div>
               <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">3D Globe Mode</div>
               <div className="text-xs text-gray-500 dark:text-gray-400">Spherical Earth view on zoom out</div>
@@ -56,21 +62,27 @@ export default function LayersPanel() {
         </label>
       </div>
       <div className="space-y-1">
-        {(Object.keys(LAYER_LABELS) as Array<keyof LayerVisibility>).map(key => (
-          <label
-            key={key}
-            className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded px-1 py-1"
-          >
-            <input
-              type="checkbox"
-              checked={layers[key]}
-              onChange={() => toggleLayer(key)}
-              className="accent-blue-500"
-            />
-            <span>{LAYER_ICONS[key]}</span>
-            <span className="flex-1">{LAYER_LABELS[key]}</span>
-          </label>
-        ))}
+        {(Object.keys(LAYER_CONFIG) as Array<keyof LayerVisibility>).map(key => {
+          const item = LAYER_CONFIG[key]
+          const IconComp = item.icon
+          return (
+            <label
+              key={key}
+              className="flex items-center gap-2.5 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-md px-1.5 py-1.5 transition"
+            >
+              <input
+                type="checkbox"
+                checked={layers[key]}
+                onChange={() => toggleLayer(key)}
+                className="accent-blue-500"
+              />
+              <IconComp className={`w-4 h-4 ${item.color}`} />
+              <span className="flex-1 text-gray-800 dark:text-gray-200 font-medium text-xs">
+                {item.label}
+              </span>
+            </label>
+          )
+        })}
       </div>
     </section>
   )

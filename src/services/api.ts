@@ -380,3 +380,52 @@ export async function fetchLiveEarthquakes(): Promise<EarthquakeRecord[]> {
     }))
     .filter(eq => !isNaN(eq.lat) && !isNaN(eq.lng) && eq.mag > 0)
 }
+
+/* ---- RainViewer Live Weather Radar ---- */
+
+export async function fetchRainViewerTimestamp(): Promise<number | null> {
+  try {
+    const data = await json<{ radar?: { past?: Array<{ time: number }> } }>(
+      'https://api.rainviewer.com/public/weather-maps.json'
+    )
+    const past = data.radar?.past
+    if (past && past.length) {
+      return past[past.length - 1].time
+    }
+  } catch {
+    /* fallback */
+  }
+  return null
+}
+
+/* ---- International Space Station (ISS) Tracker ---- */
+
+export interface ISSPosition {
+  lat: number
+  lng: number
+  altitude: number
+  velocity: number
+  timestamp: number
+}
+
+export async function fetchISSPosition(): Promise<ISSPosition | null> {
+  try {
+    const data = await json<{
+      latitude: number
+      longitude: number
+      altitude: number
+      velocity: number
+      timestamp: number
+    }>('https://api.wheretheiss.at/v1/satellites/25544')
+    return {
+      lat: data.latitude,
+      lng: data.longitude,
+      altitude: Math.round(data.altitude),
+      velocity: Math.round(data.velocity),
+      timestamp: data.timestamp,
+    }
+  } catch {
+    return null
+  }
+}
+

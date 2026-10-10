@@ -11,6 +11,7 @@ import ContextMenu from './ContextMenu'
 import Toast from './Toast'
 import NavOverlay from './NavOverlay'
 import PlaceCard from './PlaceCard'
+import { Menu, X } from 'lucide-react'
 
 function isEmbedMode(): boolean {
   const params = new URLSearchParams(location.search)
@@ -41,8 +42,8 @@ export default function Layout() {
   return (
     <div className={`app-layout ${panelOpen ? '' : 'panel-closed'} ${dark ? 'dark' : ''}`}>
       {/* Hamburger for mobile */}
-      <button className="hamburger" onClick={togglePanel} title="Toggle panel">
-        {panelOpen ? '✕' : '☰'}
+      <button className="hamburger flex items-center justify-center" onClick={togglePanel} title="Toggle panel">
+        {panelOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </button>
 
       <aside id="panel" className={panelOpen ? 'open' : ''}>

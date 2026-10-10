@@ -8,6 +8,7 @@ import { useAppStore } from '../store/useAppStore'
 import * as api from '../services/api'
 import { haversine, formatDistance, polygonArea, formatArea, coordsDMS, toDecimal } from '../services/geo'
 import type { LatLng, LayerHandleLike } from '../types'
+import { Map as MapIcon, Globe as GlobeIcon, RotateCw, Tag } from 'lucide-react'
 
 type LayerList = LayerHandleLike[]
 
@@ -620,7 +621,7 @@ export default function MapView() {
             className="px-3.5 py-2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 font-semibold text-xs text-gray-800 dark:text-gray-100 flex items-center gap-2 hover:scale-105 active:scale-95 transition"
             title="Switch back to 2D Map"
           >
-            <span>🗺️</span>
+            <MapIcon className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             <span>Switch to 2D Map</span>
           </button>
 
@@ -644,20 +645,20 @@ export default function MapView() {
                 const rotating = globeEngineRef.current?.toggleAutoRotate()
                 useAppStore.getState().showToast(rotating ? 'Auto-rotation resumed' : 'Auto-rotation paused')
               }}
-              className="w-9 h-9 flex items-center justify-center text-sm hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
+              className="w-9 h-9 flex items-center justify-center text-sm hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition text-gray-700 dark:text-gray-300"
               title="Toggle earth rotation"
             >
-              🔄
+              <RotateCw className="w-4 h-4" />
             </button>
             <button
               onClick={() => {
                 const visible = globeEngineRef.current?.toggleCountryLabels()
                 useAppStore.getState().showToast(visible ? 'Country labels shown' : 'Country labels hidden')
               }}
-              className="w-9 h-9 flex items-center justify-center text-sm hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
+              className="w-9 h-9 flex items-center justify-center text-sm hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition text-gray-700 dark:text-gray-300"
               title="Toggle country labels"
             >
-              🏷️
+              <Tag className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -668,10 +669,10 @@ export default function MapView() {
               setGlobeMode(true)
               useAppStore.getState().showToast('Switched to 3D Globe view')
             }}
-            className="px-3.5 py-2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md rounded-xl shadow-md border border-gray-200 dark:border-gray-700 font-semibold text-xs text-gray-800 dark:text-gray-100 flex items-center gap-1.5 hover:scale-105 active:scale-95 hover:bg-white dark:hover:bg-gray-800 transition"
+            className="px-3.5 py-2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md rounded-xl shadow-md border border-gray-200 dark:border-gray-700 font-semibold text-xs text-gray-800 dark:text-gray-100 flex items-center gap-2 hover:scale-105 active:scale-95 hover:bg-white dark:hover:bg-gray-800 transition"
             title="Switch to 3D Globe"
           >
-            <span>🌐</span>
+            <GlobeIcon className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             <span>3D Globe</span>
           </button>
         </div>
