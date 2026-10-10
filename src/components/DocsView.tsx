@@ -209,20 +209,24 @@ export default function DocsView() {
     <div className="h-screen w-full overflow-y-auto bg-white dark:bg-zinc-950 text-gray-900 dark:text-gray-100 flex flex-col antialiased selection:bg-blue-500 selection:text-white">
       {/* Top Header */}
       <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 dark:bg-zinc-900/90 border-b border-gray-200 dark:border-zinc-800 px-4 lg:px-8 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             onClick={handleReturnToMap}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-600 dark:text-blue-400 font-bold text-xs transition"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-600 dark:text-blue-400 font-bold text-xs shrink-0 transition"
           >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Return to Map</span>
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Return to Map</span>
+            <span className="sm:hidden">Map</span>
           </button>
           <div className="h-5 w-px bg-gray-200 dark:bg-zinc-800 hidden sm:block" />
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🗺️</span>
-            <span className="font-bold text-base tracking-tight">Leaflet & Map Atlas API Reference</span>
-            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-400">
-              v2.0 & v2.4
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-base sm:text-xl shrink-0">🗺️</span>
+            <span className="font-bold text-sm sm:text-base tracking-tight truncate">
+              <span className="hidden sm:inline">Leaflet & Map Atlas API Reference</span>
+              <span className="sm:hidden">Atlas API Reference</span>
+            </span>
+            <span className="px-1.5 sm:px-2 py-0.5 text-[10px] font-bold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-400 shrink-0">
+              v2.4
             </span>
           </div>
         </div>

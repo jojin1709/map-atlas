@@ -8,7 +8,7 @@ import { useAppStore } from '../store/useAppStore'
 import * as api from '../services/api'
 import { haversine, formatDistance, polygonArea, formatArea, coordsDMS, toDecimal } from '../services/geo'
 import type { LatLng, LayerHandleLike } from '../types'
-import { Map as MapIcon, Globe as GlobeIcon, RotateCw, Tag, Camera, Compass, Car, CloudDownload, CloudRain, BookOpen } from 'lucide-react'
+import { Map as MapIcon, Globe as GlobeIcon, RotateCw, Tag, Camera, Compass, Car, CloudDownload, CloudRain, BookOpen, Layers as LayersIcon } from 'lucide-react'
 
 type LayerList = LayerHandleLike[]
 
@@ -796,7 +796,7 @@ export default function MapView() {
   })()
 
   return (
-    <div className="relative flex-1 h-full overflow-hidden bg-gray-900">
+    <div className="relative flex-1 h-full overflow-hidden bg-[#aad3df] dark:bg-[#0b132b]">
       {/* 2D Flat Map View */}
       <div
         ref={containerRef}
@@ -863,117 +863,152 @@ export default function MapView() {
           </div>
         </div>
       ) : (
-        <div className="absolute top-3 right-14 sm:right-16 z-10 flex items-center bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/80 dark:border-zinc-800/80 p-1 gap-0.5">
-          {/* Compass / Orientation */}
-          <button
-            onClick={() => {
-              toggleCompass()
-              useAppStore.getState().showToast(compassActive ? 'Compass disabled' : 'Phone Compass sensor enabled')
-            }}
-            className={`p-2 sm:px-2.5 sm:py-1.5 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition ${
-              compassActive
-                ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold'
-                : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
-            }`}
-            title={compassActive ? `Heading: ${compassHeading ?? 0}° - Click to disable` : 'Enable real-time Compass orientation'}
-          >
-            <Compass
-              className="w-4 h-4 transition-transform duration-200"
-              style={{ transform: compassHeading !== null ? `rotate(${compassHeading}deg)` : 'none' }}
-            />
-            <span className="hidden xl:inline">
-              {compassHeading !== null ? `${compassHeading}°` : 'Compass'}
-            </span>
-          </button>
+        <>
+          <div className="hidden sm:flex absolute top-3 right-14 sm:right-16 z-10 items-center bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/80 dark:border-zinc-800/80 p-1 gap-0.5">
+            {/* Compass / Orientation */}
+            <button
+              onClick={() => {
+                toggleCompass()
+                useAppStore.getState().showToast(compassActive ? 'Compass disabled' : 'Phone Compass sensor enabled')
+              }}
+              className={`p-2 sm:px-2.5 sm:py-1.5 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition ${
+                compassActive
+                  ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold'
+                  : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
+              }`}
+              title={compassActive ? `Heading: ${compassHeading ?? 0}° - Click to disable` : 'Enable real-time Compass orientation'}
+            >
+              <Compass
+                className="w-4 h-4 transition-transform duration-200"
+                style={{ transform: compassHeading !== null ? `rotate(${compassHeading}deg)` : 'none' }}
+              />
+              <span className="hidden xl:inline">
+                {compassHeading !== null ? `${compassHeading}°` : 'Compass'}
+              </span>
+            </button>
 
-          {/* Traffic Toggle */}
-          <button
-            onClick={() => {
-              toggleLayer('traffic')
-              useAppStore.getState().showToast(!layers.traffic ? 'Live traffic flow overlay enabled' : 'Traffic flow hidden')
-            }}
-            className={`p-2 sm:px-2.5 sm:py-1.5 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition ${
-              layers.traffic
-                ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 font-bold'
-                : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
-            }`}
-            title={layers.traffic ? 'Hide Traffic Flow' : 'Show Live Traffic Flow'}
-          >
-            <Car className="w-4 h-4 text-amber-500" />
-            <span className="hidden xl:inline">Traffic</span>
-          </button>
+            {/* Traffic Toggle */}
+            <button
+              onClick={() => {
+                toggleLayer('traffic')
+                useAppStore.getState().showToast(!layers.traffic ? 'Live traffic flow overlay enabled' : 'Traffic flow hidden')
+              }}
+              className={`p-2 sm:px-2.5 sm:py-1.5 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition ${
+                layers.traffic
+                  ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 font-bold'
+                  : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
+              }`}
+              title={layers.traffic ? 'Hide Traffic Flow' : 'Show Live Traffic Flow'}
+            >
+              <Car className="w-4 h-4 text-amber-500" />
+              <span className="hidden xl:inline">Traffic</span>
+            </button>
 
-          {/* Offline Manager */}
-          <button
-            onClick={() => setOfflineManagerOpen(true)}
-            className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl font-semibold text-xs text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center gap-1.5 transition"
-            title="Download offline maps"
-          >
-            <CloudDownload className="w-4 h-4 text-emerald-500" />
-            <span className="hidden xl:inline">Offline</span>
-          </button>
+            {/* Offline Manager */}
+            <button
+              onClick={() => setOfflineManagerOpen(true)}
+              className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl font-semibold text-xs text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center gap-1.5 transition"
+              title="Download offline maps"
+            >
+              <CloudDownload className="w-4 h-4 text-emerald-500" />
+              <span className="hidden xl:inline">Offline</span>
+            </button>
 
-          <div className="w-px h-5 bg-gray-200 dark:bg-zinc-800 mx-0.5" />
+            <div className="w-px h-5 bg-gray-200 dark:bg-zinc-800 mx-0.5" />
 
-          {/* Street View */}
-          <button
-            onClick={() => {
-              const engine = engineRef.current
-              const c = engine ? engine.getCenter() : (userLocation || { lat: 0, lng: 0 })
-              useAppStore.getState().setStreetViewCoord(c)
-            }}
-            className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl font-semibold text-xs text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center gap-1.5 transition"
-            title="Open 360° Street View at current center"
-          >
-            <Camera className="w-4 h-4 text-sky-500" />
-            <span className="hidden xl:inline">Street View</span>
-          </button>
+            {/* Street View */}
+            <button
+              onClick={() => {
+                const engine = engineRef.current
+                const c = engine ? engine.getCenter() : (userLocation || { lat: 0, lng: 0 })
+                useAppStore.getState().setStreetViewCoord(c)
+              }}
+              className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl font-semibold text-xs text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center gap-1.5 transition"
+              title="Open 360° Street View at current center"
+            >
+              <Camera className="w-4 h-4 text-sky-500" />
+              <span className="hidden xl:inline">Street View</span>
+            </button>
 
-          {/* 3D Globe */}
-          <button
-            onClick={() => {
-              setGlobeMode(true)
-              useAppStore.getState().showToast('Switched to 3D Globe view')
-            }}
-            className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl font-semibold text-xs text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center gap-1.5 transition"
-            title="Switch to 3D Globe"
-          >
-            <GlobeIcon className="w-4 h-4 text-blue-500" />
-            <span className="hidden xl:inline">3D Globe</span>
-          </button>
+            {/* 3D Globe */}
+            <button
+              onClick={() => {
+                setGlobeMode(true)
+                useAppStore.getState().showToast('Switched to 3D Globe view')
+              }}
+              className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl font-semibold text-xs text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center gap-1.5 transition"
+              title="Switch to 3D Globe"
+            >
+              <GlobeIcon className="w-4 h-4 text-blue-500" />
+              <span className="hidden xl:inline">3D Globe</span>
+            </button>
 
-          {/* Radar Overlay */}
-          <button
-            onClick={() => {
-              toggleLayer('radar')
-              useAppStore.getState().showToast(!layers.radar ? 'Live weather radar overlay enabled' : 'Weather radar hidden')
-            }}
-            className={`p-2 sm:px-2.5 sm:py-1.5 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition ${
-              layers.radar
-                ? 'bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 font-bold'
-                : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
-            }`}
-            title={layers.radar ? 'Hide Weather Radar' : 'Show Live Weather Radar'}
-          >
-            <CloudRain className="w-4 h-4 text-sky-500" />
-            <span className="hidden xl:inline">Radar</span>
-          </button>
+            {/* Radar Overlay */}
+            <button
+              onClick={() => {
+                toggleLayer('radar')
+                useAppStore.getState().showToast(!layers.radar ? 'Live weather radar overlay enabled' : 'Weather radar hidden')
+              }}
+              className={`p-2 sm:px-2.5 sm:py-1.5 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition ${
+                layers.radar
+                  ? 'bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 font-bold'
+                  : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
+              }`}
+              title={layers.radar ? 'Hide Weather Radar' : 'Show Live Weather Radar'}
+            >
+              <CloudRain className="w-4 h-4 text-sky-500" />
+              <span className="hidden xl:inline">Radar</span>
+            </button>
 
-          <div className="w-px h-5 bg-gray-200 dark:bg-zinc-800 mx-0.5" />
+            <div className="w-px h-5 bg-gray-200 dark:bg-zinc-800 mx-0.5" />
 
-          {/* Docs Link */}
-          <button
-            onClick={() => {
-              window.history.pushState(null, '', '/docs')
-              window.dispatchEvent(new PopStateEvent('popstate'))
-            }}
-            className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl font-semibold text-xs text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center gap-1.5 transition"
-            title="Open API Reference & Docs"
-          >
-            <BookOpen className="w-4 h-4 text-purple-500" />
-            <span className="hidden xl:inline">Docs</span>
-          </button>
-        </div>
+            {/* Docs Link */}
+            <button
+              onClick={() => {
+                window.history.pushState(null, '', '/docs')
+                window.dispatchEvent(new PopStateEvent('popstate'))
+              }}
+              className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl font-semibold text-xs text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center gap-1.5 transition"
+              title="Open API Reference & Docs"
+            >
+              <BookOpen className="w-4 h-4 text-purple-500" />
+              <span className="hidden xl:inline">Docs</span>
+            </button>
+          </div>
+
+          {/* Mobile floating quick controls stack under zoom buttons */}
+          <div className="sm:hidden absolute top-[152px] right-3 z-10 flex flex-col gap-2">
+            {/* Compass / Orientation */}
+            <button
+              onClick={() => {
+                toggleCompass()
+                useAppStore.getState().showToast(compassActive ? 'Compass disabled' : 'Phone Compass sensor enabled')
+              }}
+              className={`w-9 h-9 rounded-xl shadow-md border flex items-center justify-center transition active:scale-95 ${
+                compassActive
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-blue-500/30'
+                  : 'bg-white/95 dark:bg-zinc-900/95 text-gray-700 dark:text-zinc-300 border-gray-200 dark:border-zinc-800 backdrop-blur-md'
+              }`}
+              title="Toggle Compass"
+            >
+              <Compass
+                className="w-4 h-4 transition-transform duration-200"
+                style={{ transform: compassHeading !== null ? `rotate(${compassHeading}deg)` : 'none' }}
+              />
+            </button>
+
+            {/* Quick Layers Drawer shortcut */}
+            <button
+              onClick={() => {
+                useAppStore.getState().openPanel('layers')
+              }}
+              className="w-9 h-9 bg-white/95 dark:bg-zinc-900/95 text-gray-700 dark:text-zinc-300 rounded-xl shadow-md border border-gray-200 dark:border-zinc-800 flex items-center justify-center transition active:scale-95 backdrop-blur-md"
+              title="Map Layers & Styles"
+            >
+              <LayersIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            </button>
+          </div>
+        </>
       )}
 
       {measureMode && measureInfo && !globeMode && (

@@ -26,9 +26,12 @@ body { font-family: system-ui, -apple-system, sans-serif; }
 .me-root {
   position: relative;
   overflow: hidden;
-  background: #e8e4dd;
+  background: #aad3df;
   touch-action: none;
   user-select: none;
+}
+.dark .me-root {
+  background: #0b132b;
 }
 .me-root.me-dragging { cursor: grabbing !important; }
 
@@ -254,6 +257,7 @@ body { font-family: system-ui, -apple-system, sans-serif; }
 .panel-body {
   flex: 1;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 0 16px 16px;
 }
 
@@ -492,21 +496,41 @@ button:disabled {
     flex-direction: column-reverse;
     position: fixed;
     inset: 0;
+    pointer-events: none;
+  }
+
+  .app-layout > * {
+    pointer-events: auto;
   }
 
   .hamburger {
     display: none !important;
   }
 
+  .me-controls {
+    top: 68px;
+    right: 12px;
+  }
+
+  .me-scalebar {
+    bottom: 68px;
+    left: 12px;
+  }
+
+  .me-attr-brand {
+    bottom: 66px;
+    right: 8px;
+  }
+
   #panel {
     position: fixed;
-    bottom: 54px;
+    bottom: 60px;
     left: 0;
     right: 0;
     width: 100%;
     min-width: unset;
     height: 54vh;
-    max-height: 78vh;
+    max-height: 80vh;
     border-left: none;
     border-top: 1px solid #e5e7eb;
     border-radius: 24px 24px 0 0;

@@ -58,36 +58,48 @@ export default function StreetViewModal() {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200"
       onClick={() => setCoord(null)}
     >
       <div
-        className="relative w-full max-w-4xl h-[85vh] max-h-[750px] bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+        className="relative w-full max-w-4xl h-[92vh] sm:h-[85vh] max-h-[750px] bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-200 dark:border-zinc-800 bg-gray-50/80 dark:bg-zinc-850/80 backdrop-blur-sm">
-          <div className="flex items-center gap-2.5 min-w-0 pr-3">
-            <div className="w-8 h-8 rounded-lg bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800/60 flex items-center justify-center shrink-0">
-              <Camera className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-3.5 sm:px-5 py-2.5 sm:py-3.5 border-b border-gray-200 dark:border-zinc-800 bg-gray-50/90 dark:bg-zinc-850/90 backdrop-blur-sm gap-2">
+          {/* Top line on mobile: Icon, title & Close button */}
+          <div className="flex items-center justify-between w-full sm:w-auto">
+            <div className="flex items-center gap-2 min-w-0 pr-2">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800/60 flex items-center justify-center shrink-0">
+                <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-600 dark:text-sky-400" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-1.5 truncate">
+                  <span>Street View 360°</span>
+                  <span className="text-[10px] sm:text-[11px] font-mono px-1 py-0.5 rounded bg-gray-200/70 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 font-normal">
+                    {toDecimal(coord.lat, coord.lng)}
+                  </span>
+                </h3>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5 max-w-[200px] sm:max-w-xs">
+                  {address || 'Fetching address…'}
+                </p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-1.5 truncate">
-                <span>Street View Panorama</span>
-                <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-gray-200/70 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 font-normal">
-                  {toDecimal(coord.lat, coord.lng)}
-                </span>
-              </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                {address || 'Fetching address…'}
-              </p>
-            </div>
+
+            {/* Mobile close button */}
+            <button
+              onClick={() => setCoord(null)}
+              className="sm:hidden w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-gray-600 dark:text-gray-200 transition shrink-0"
+              title="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
-          {/* Action Links & Close */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          {/* Controls line on mobile / right section on desktop */}
+          <div className="flex items-center justify-between sm:justify-end gap-1.5 w-full sm:w-auto shrink-0 overflow-x-auto pb-0.5 sm:pb-0">
             {/* Provider Switcher */}
-            <div className="flex items-center rounded-lg border border-gray-200 dark:border-zinc-700 p-0.5 bg-gray-100 dark:bg-zinc-800 text-xs">
+            <div className="flex items-center rounded-lg border border-gray-200 dark:border-zinc-700 p-0.5 bg-gray-100 dark:bg-zinc-800 text-xs shrink-0">
               <button
                 type="button"
                 onClick={() => setProvider('google')}
@@ -112,31 +124,34 @@ export default function StreetViewModal() {
               </button>
             </div>
 
-            <button
-              onClick={copyUrl}
-              className="px-2.5 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center gap-1 transition"
-              title="Copy Street View URL"
-            >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">{copied ? 'Copied' : 'Share'}</span>
-            </button>
-            <a
-              href={provider === 'google' ? googleMapsUrl : mapillaryUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-2.5 py-1.5 text-xs font-medium rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 flex items-center gap-1 transition"
-              title="Open full interactive Street View in app or browser"
-            >
-              <ExternalLink className="w-3.5 h-3.5 text-blue-500" />
-              <span className="hidden sm:inline">Open in {provider === 'google' ? 'Google' : 'Mapillary'}</span>
-            </a>
-            <button
-              onClick={() => setCoord(null)}
-              className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-200 dark:hover:bg-zinc-800 text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 transition"
-              title="Close (Esc)"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={copyUrl}
+                className="px-2 py-1 sm:px-2.5 sm:py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center gap-1 transition"
+                title="Copy Street View URL"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                <span className="hidden sm:inline">{copied ? 'Copied' : 'Share'}</span>
+              </button>
+              <a
+                href={provider === 'google' ? googleMapsUrl : mapillaryUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2 py-1 sm:px-2.5 sm:py-1.5 text-xs font-medium rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 flex items-center gap-1 transition"
+                title="Open full interactive Street View in app or browser"
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-blue-500" />
+                <span className="hidden sm:inline">Open in {provider === 'google' ? 'Google' : 'Mapillary'}</span>
+              </a>
+              {/* Desktop close button */}
+              <button
+                onClick={() => setCoord(null)}
+                className="hidden sm:flex w-8 h-8 rounded-lg items-center justify-center hover:bg-gray-200 dark:hover:bg-zinc-800 text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 transition"
+                title="Close (Esc)"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
 

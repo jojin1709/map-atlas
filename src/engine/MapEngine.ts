@@ -380,6 +380,39 @@ export class MapEngine {
     wrap.appendChild(content)
     this.popup = { latlng: { ...latlng }, el: wrap }
     this._draw()
+
+    // Auto-pan if popup is partially obscured by mobile top/bottom bars or window edges
+    requestAnimationFrame(() => {
+      if (!this.popup) return
+      const rect = wrap.getBoundingClientRect()
+      const cRect = this.container.getBoundingClientRect()
+      if (!rect.width || !rect.height) return
+
+      const topPadding = window.innerWidth <= 640 ? 70 : 24
+      const bottomPadding = window.innerWidth <= 640 ? 80 : 24
+      const sidePadding = 16
+
+      let panX = 0
+      let panY = 0
+
+      if (rect.top < cRect.top + topPadding) {
+        panY = rect.top - (cRect.top + topPadding)
+      } else if (rect.bottom > cRect.bottom - bottomPadding) {
+        panY = rect.bottom - (cRect.bottom - bottomPadding)
+      }
+
+      if (rect.left < cRect.left + sidePadding) {
+        panX = rect.left - (cRect.left + sidePadding)
+      } else if (rect.right > cRect.right - sidePadding) {
+        panX = rect.right - (cRect.right - sidePadding)
+      }
+
+      if (panX !== 0 || panY !== 0) {
+        this.cx += panX
+        this.cy += panY
+        this._draw()
+      }
+    })
   }
 
   closePopup(): void {

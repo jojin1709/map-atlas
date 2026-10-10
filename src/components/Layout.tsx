@@ -131,6 +131,35 @@ export default function Layout() {
         </button>
       )}
 
+      {/* Mobile Top Floating Search Bar (Google Maps style) */}
+      {!panelOpen && (
+        <div className="sm:hidden fixed top-3 inset-x-3 z-30 flex items-center gap-2">
+          <button
+            onClick={() => {
+              setActiveTab('search')
+              useAppStore.getState().openPanel('search')
+            }}
+            className="flex-1 flex items-center gap-2 px-3.5 py-2.5 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/80 dark:border-zinc-800/80 text-gray-500 dark:text-zinc-400 text-xs font-medium text-left active:scale-98 transition"
+            title="Search locations"
+          >
+            <Search className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+            <span className="truncate">Search city, address, or landmark…</span>
+          </button>
+
+          {/* Quick Docs Link */}
+          <button
+            onClick={() => {
+              window.history.pushState(null, '', '/docs')
+              window.dispatchEvent(new PopStateEvent('popstate'))
+            }}
+            className="p-2.5 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/80 dark:border-zinc-800/80 text-purple-600 dark:text-purple-400 shrink-0 active:scale-95 transition"
+            title="API Docs"
+          >
+            <BookOpen className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Floating Locate Me button on mobile when sheet is closed */}
       {!panelOpen && (
         <button
@@ -235,8 +264,8 @@ export default function Layout() {
           </div>
         </header>
 
-        {/* Desktop Segmented Tab Switcher */}
-        <div className="hidden sm:flex items-center gap-1 px-4 py-2 border-b border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/50 overflow-x-auto shrink-0">
+        {/* Segmented Tab Switcher (Visible on both Mobile & Desktop) */}
+        <div className="flex items-center gap-1 px-3 sm:px-4 py-2 border-b border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/50 overflow-x-auto shrink-0">
           {TABS.map(tab => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
@@ -279,7 +308,7 @@ export default function Layout() {
       </aside>
 
       {/* Mobile Bottom Navigation Bar (Persistent & Native Feeling) */}
-      <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-gray-200 dark:border-zinc-800 flex items-center justify-around py-1 px-2 shadow-2xl sm:hidden">
+      <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-gray-200 dark:border-zinc-800 flex items-center justify-around h-[60px] pb-1 px-1 shadow-2xl sm:hidden select-none">
         {TABS.map(tab => {
           const Icon = tab.icon
           const isActive = panelOpen && activeTab === tab.id
@@ -293,20 +322,22 @@ export default function Layout() {
                   setActiveTab(tab.id)
                 }
               }}
-              className={`flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition border-0 bg-transparent ${
+              className={`flex flex-col items-center justify-center flex-1 h-full py-0.5 rounded-xl transition border-0 bg-transparent cursor-pointer ${
                 isActive
                   ? 'text-blue-600 dark:text-blue-400 font-bold'
                   : 'text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200'
               }`}
             >
               <div
-                className={`p-1 rounded-xl transition ${
-                  isActive ? 'bg-blue-50 dark:bg-blue-950/60' : ''
+                className={`p-1 rounded-lg transition-transform ${
+                  isActive ? 'bg-blue-50 dark:bg-blue-950/60 scale-105' : ''
                 }`}
               >
-                <Icon className={`w-5 h-5 ${isActive ? 'scale-110' : ''}`} />
+                <Icon className="w-5 h-5" />
               </div>
-              <span className="text-[10px] tracking-tight">{tab.shortLabel}</span>
+              <span className={`text-[10px] tracking-tight leading-none mt-0.5 block ${isActive ? 'font-bold' : 'font-medium'}`}>
+                {tab.shortLabel}
+              </span>
             </button>
           )
         })}

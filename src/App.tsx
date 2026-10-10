@@ -4,16 +4,28 @@ import MapView from './components/MapView'
 import DocsView from './components/DocsView'
 
 export default function App() {
-  const [isDocs, setIsDocs] = useState(() => {
-    return typeof window !== 'undefined' && window.location.pathname.startsWith('/docs')
-  })
+  const checkIsDocs = () => {
+    if (typeof window === 'undefined') return false
+    return (
+      window.location.pathname.startsWith('/docs') ||
+      window.location.hash.startsWith('#/docs') ||
+      window.location.hash.startsWith('#docs') ||
+      new URLSearchParams(window.location.search).has('docs')
+    )
+  }
+
+  const [isDocs, setIsDocs] = useState(checkIsDocs)
 
   useEffect(() => {
     const handleLocationChange = () => {
-      setIsDocs(window.location.pathname.startsWith('/docs'))
+      setIsDocs(checkIsDocs())
     }
     window.addEventListener('popstate', handleLocationChange)
-    return () => window.removeEventListener('popstate', handleLocationChange)
+    window.addEventListener('hashchange', handleLocationChange)
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange)
+      window.removeEventListener('hashchange', handleLocationChange)
+    }
   }, [])
 
   useEffect(() => {
