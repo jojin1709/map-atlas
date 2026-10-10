@@ -13,6 +13,7 @@
 import * as THREE from 'three'
 import type { LatLng } from '../types'
 import { TILE_STYLES } from '../tileStyles'
+import { ATMOSPHERE_VERTEX_SHADER, ATMOSPHERE_FRAGMENT_SHADER } from '../shaders'
 
 export interface CountryLabelData {
   name: string
@@ -201,24 +202,11 @@ export class GlobeEngine {
     this.earthMesh = new THREE.Mesh(sphereGeom, earthMat)
     this.globeGroup.add(this.earthMesh)
 
-    // Atmospheric Glow Mesh
+    // Atmospheric Glow Mesh (GLSL Shaders)
     const atmGeom = new THREE.SphereGeometry(1.025, 48, 48)
     const atmMat = new THREE.ShaderMaterial({
-      vertexShader: `
-        varying vec3 vNormal;
-        void main() {
-          vNormal = normalize(normalMatrix * normal);
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        varying vec3 vNormal;
-        void main() {
-          float d = dot(vNormal, vec3(0.0, 0.0, 1.0));
-          float intensity = pow(max(0.0, 0.65 - d), 2.2);
-          gl_FragColor = vec4(0.3, 0.65, 1.0, 1.0) * intensity * 0.85;
-        }
-      `,
+      vertexShader: ATMOSPHERE_VERTEX_SHADER,
+      fragmentShader: ATMOSPHERE_FRAGMENT_SHADER,
       blending: THREE.AdditiveBlending,
       side: THREE.BackSide,
       transparent: true,
