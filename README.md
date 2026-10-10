@@ -9,17 +9,20 @@
 No Leaflet. No Mapbox. No Google Maps. Just TypeScript, React, and pure engineering.
 
 [![npm](https://img.shields.io/npm/v/map-atlas?logo=npm&color=CB3837)](https://www.npmjs.com/package/map-atlas)
+[![DEV Post](https://img.shields.io/badge/DEV-Article-0A0A0A?logo=dev.to&logoColor=white)](https://dev.to/jojin1709/building-a-lightweight-dependency-free-web-map-engine-in-typescript-4a6d)
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
 [![PWA](https://img.shields.io/badge/PWA-Installable-blue?logo=pwa&logoColor=white)](https://mapapp-lovat.vercel.app)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-[Live App (Vercel)](https://mapapp-lovat.vercel.app) · [Cloudflare Edge](https://map-atlas.apkscope.workers.dev) · [Interactive API Docs](https://mapapp-lovat.vercel.app/docs) · [npm](https://www.npmjs.com/package/map-atlas) · [Report Bug](https://github.com/jojin1709/map-atlas/issues)
+[Live App (Vercel)](https://mapapp-lovat.vercel.app) · [Cloudflare Edge](https://map-atlas.apkscope.workers.dev) · [Interactive API Docs](https://mapapp-lovat.vercel.app/docs) · [Read Article on DEV](https://dev.to/jojin1709/building-a-lightweight-dependency-free-web-map-engine-in-typescript-4a6d) · [npm](https://www.npmjs.com/package/map-atlas) · [Report Bug](https://github.com/jojin1709/map-atlas/issues)
 
 </div>
 
 ---
+
+> 📖 **Engineering Deep-Dive:** Read our full write-up on [Building a Lightweight, Dependency-Free Web Map Engine in TypeScript](https://dev.to/jojin1709/building-a-lightweight-dependency-free-web-map-engine-in-typescript-4a6d) on DEV Community.
 
 ## Highlights
 
@@ -53,9 +56,9 @@ npm install react react-dom
 ### CDN (no build step)
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/map-atlas@1.0.2/dist/styles.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/map-atlas@1.0.3/dist/map-atlas.css" />
 <script type="module">
-  import { MapEngine } from 'https://cdn.jsdelivr.net/npm/map-atlas@1.0.2/dist/map-atlas.js'
+  import { MapEngine } from 'https://cdn.jsdelivr.net/npm/map-atlas@1.0.3/dist/map-atlas.js'
 
   const map = new MapEngine('#map', {
     center: [51.5, -0.12],
